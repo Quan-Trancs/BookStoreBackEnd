@@ -6,7 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import quantran.api.common.UrlConstant;
+import quantran.api.model.UserModel;
 import quantran.api.service.UserService;
+
+import java.util.List;
 
 
 @RestController
@@ -19,10 +22,11 @@ public class UserController {
 
     @PostMapping(UrlConstant.LOGIN)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<Boolean> login(@RequestParam String userName, @RequestParam String password) {
+    public ResponseEntity<String> login(@RequestParam String userName, @RequestParam String password, @RequestParam String role) {
         log.info("Start login()");
-        boolean loginStatus = userService.login(userName, password);
+        UserModel userModel = new UserModel(userName, password, role);
+        String key = userService.login(userModel);
         log.info("End login()");
-        return ResponseEntity.ok(loginStatus);
+        return ResponseEntity.ok(key);
     }
 }

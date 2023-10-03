@@ -1,12 +1,12 @@
 package quantran.api.entity;
 
 
+import quantran.api.BookType.BookType;
+import quantran.api.UserRole.UserRole;
 import quantran.api.model.UserModel;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(name = "user2")
@@ -18,14 +18,30 @@ public class UserEntity {
     @Column(name = "password")
     private String password;
 
+    @ManyToOne()
+    @JoinColumn(name = "roleId", referencedColumnName = "roleId")
+    private UserRole userRole;
+
+    @Column(name = "key")
+    private String key;
+
     public UserEntity() {}
-    public UserEntity(String userName, String password) {
+    public UserEntity(String userName, String password, UserRole userRole) {
         this.userName = userName;
         this.password = password;
+        this.userRole = userRole;
     }
     public UserEntity(UserModel userModel) {
         this.userName = userModel.getUserName();
         this.password = userModel.getPassword();
+        UserRole newUserRole = new UserRole(userModel.getUserRole());
+        this.userRole = newUserRole;
+        this.key = userModel.getKey();
+    }
+    public UserEntity(String userName, String password, int userRole) {
+        this.userName = userName;
+        this.password = password;
+        this.userRole = new UserRole(userRole);
     }
     public String getUserName() {
         return userName;
@@ -42,5 +58,17 @@ public class UserEntity {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    public UserRole getUserRole() {
+        return userRole;
+    }
+
+    public void setUserRole(UserRole userRole) {
+        this.userRole = userRole;
+    }
+
+    public String getKey() { return key;}
+
+    public void setKey(String key) { this.key = key; }
 
 }

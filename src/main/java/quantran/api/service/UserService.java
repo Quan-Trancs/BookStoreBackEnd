@@ -1,5 +1,12 @@
 package quantran.api.service;
 
+import quantran.api.entity.UserEntity;
+import quantran.api.model.UserModel;
+
+import java.util.List;
+
 public interface UserService {
-    boolean login(String userName, String password);
+    String login(UserModel userModel);
+
+    String setUserKey(UserEntity userEntity);
 }
