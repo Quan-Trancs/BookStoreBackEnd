@@ -14,7 +14,7 @@ public class UserRole {
     @Column(name = "roleId")
     private int roleId;
 
-    @OneToMany(mappedBy = "roleId")
+    @OneToMany(mappedBy = "userRole")
     private List<UserEntity> userEntities;
 
     public UserRole() {}

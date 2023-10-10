@@ -18,18 +18,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserBusinessImpl implements UserBusiness {
     private final UserRepository userRepository;
-    private final UserService userService;
     @Override
-    public void setUserKey(UserEntity userEntity) {
-        userRepository.save(userEntity);
-    }
-    @Override
-    public String login(UserEntity userEntity) {
+    public String login(UserEntity userEntity, String newKey) {
+        String key = newKey;
         log.info("Start login()");
         String userName = userEntity.getUserName();
         String password = userEntity.getPassword();
         boolean loginStatus = userRepository.existsByUserNameAndPassword(userName, password);
-        String key = "";
+        userRepository.save(userEntity);
         if (loginStatus) {
             UserEntity loginedUserEntity = userRepository.findByUserName(userName);
             String userKey = loginedUserEntity.getKey();
@@ -37,9 +33,10 @@ public class UserBusinessImpl implements UserBusiness {
                 key = userKey;
             }
             else {
-                key = userService.setUserKey(loginedUserEntity);
+                userEntity.setKey(key);
             }
         }
+        else return "false";
         //List<UserEntity> list = userRepository.findAll();
         //log.info(list);
         log.info("End login()");

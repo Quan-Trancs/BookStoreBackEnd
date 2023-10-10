@@ -6,9 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface UserBusiness {
-    default String login(UserEntity userEntity) {
+    default String login(UserEntity userEntity, String key) {
         return "";
     };
 
-    void setUserKey(UserEntity userEntity);
 }

@@ -8,5 +8,5 @@ import java.util.List;
 public interface UserService {
     String login(UserModel userModel);
 
-    String setUserKey(UserEntity userEntity);
+    String generateUserKey(UserEntity userEntity);
 }

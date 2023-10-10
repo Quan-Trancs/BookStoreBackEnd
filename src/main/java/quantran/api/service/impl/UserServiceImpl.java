@@ -21,22 +21,21 @@ public class UserServiceImpl implements UserService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @Override
-    public String setUserKey(UserEntity userEntity) {
+    public String generateUserKey(UserEntity userEntity) {
         StringBuilder key = new StringBuilder(10);
         for (int i = 0; i < 10; i++) {
             int randomIndex = RANDOM.nextInt(CHARACTERS.length());
             char randomChar = CHARACTERS.charAt(randomIndex);
             key.append(randomChar);
         }
-        userEntity.setKey(key.toString());
-        userBusiness.setUserKey(userEntity);
         return key.toString();
     }
     @Override
     public String login(UserModel userModel) {
         log.info("Start login()");
         UserEntity userEntity = new UserEntity(userModel);
-        String key = userBusiness.login(userEntity);
-            return key;
+        String key = generateUserKey(userEntity);
+        key = userBusiness.login(userEntity, key);
+        return key;
     }
 }
