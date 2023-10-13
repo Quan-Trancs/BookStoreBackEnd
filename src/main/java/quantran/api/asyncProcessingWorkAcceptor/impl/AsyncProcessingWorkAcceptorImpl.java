@@ -13,7 +13,7 @@ public class AsyncProcessingWorkAcceptorImpl {
         }
 
         String key = userModel.getKey();
-        // Perform authorization checks here with the authorizationHeader.
+        // Perform authorization checks here with the key value.
 
         if (key == null) {
             requestStatus[0] = "404";
