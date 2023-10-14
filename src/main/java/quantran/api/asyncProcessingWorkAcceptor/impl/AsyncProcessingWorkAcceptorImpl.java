@@ -1,9 +1,13 @@
 package quantran.api.asyncProcessingWorkAcceptor.impl;
 
+import org.springframework.stereotype.Component;
+import quantran.api.asyncProcessingWorkAcceptor.AsyncProcessingWorkAcceptor;
 import quantran.api.model.UserModel;
 
-public class AsyncProcessingWorkAcceptorImpl {
-    public String[] asyncProcessingWorkAcceptor(UserModel userModel) {
+@Component
+public class AsyncProcessingWorkAcceptorImpl implements AsyncProcessingWorkAcceptor {
+    @Override
+    public String[] workAcceptor(UserModel userModel) {
         String[] requestStatus = new String[2];
         String userName = userModel.getUserName();
         if (userName == null) {

@@ -37,6 +37,10 @@ public class UserModel {
         this.userRole = userRole;
         this.key = "";
     }
+    public UserModel(String userName, String key) {
+        this.userName = userName;
+        this.key = key;
+    }
 
     public String getUserName() {
         return userName;

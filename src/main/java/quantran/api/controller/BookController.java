@@ -9,11 +9,16 @@ import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import quantran.api.BookType.BookType;
+import quantran.api.asyncProcessingBackgroundWorker.impl.AsyncProcessingBackgroundWorkerImpl;
+import quantran.api.asyncProcessingBackgroundWorker.task.Task;
+import quantran.api.asyncProcessingWorkAcceptor.AsyncProcessingWorkAcceptor;
 import quantran.api.common.UrlConstant;
 import quantran.api.errorHandle.ErrorHandler;
 import quantran.api.model.BookModel;
+import quantran.api.model.UserModel;
 import quantran.api.page.Paginate;
 import quantran.api.service.BookService;
+import quantran.api.service.TaskService;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Valid;
@@ -33,8 +38,11 @@ import static java.lang.Integer.parseInt;
 @RequestMapping(UrlConstant.BOOK)
 public class BookController {
     private final BookService bookService;
+    private final TaskService taskService;
     private final ErrorHandler errorHandler;
     private final Validator validator;
+    private final AsyncProcessingWorkAcceptor asyncProcessingWorkAcceptor;
+    private final AsyncProcessingBackgroundWorkerImpl asyncProcessingBackgroundWorkerImpl;
     @GetMapping(UrlConstant.LIST)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public ResponseEntity<Paginate> list( @RequestParam (defaultValue = "") String searchName, @RequestParam (defaultValue = "") String searchAuthor, @RequestParam (defaultValue = "") String searchId, @RequestParam (defaultValue = "0") String page, @RequestParam (defaultValue = "5") String pageSize) {
@@ -106,17 +114,23 @@ public class BookController {
     }
     @PostMapping(UrlConstant.UPDATEBOOK)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<String> updateBook(@RequestParam String updateId, @RequestParam String updateName, @RequestParam String updateType, @RequestParam String updateAuthor, @RequestParam String updatePrice) {
+    public ResponseEntity<String> updateBook(@RequestHeader String name, @RequestHeader String key, @RequestParam String updateId, @RequestParam String updateName, @RequestParam String updateType, @RequestParam String updateAuthor, @RequestParam String updatePrice) {
         BookModel bookModel = new BookModel(updateId.trim(), updateName, updateAuthor, updatePrice, updateType);
+        UserModel userModel = new UserModel(name, key);
         Set<ConstraintViolation<BookModel>> violations = validator.validate(bookModel);
         if(!violations.isEmpty()){
             return errorHandler.errorHandle(violations); //need to add handler
         }
         try {
+            String[] status = asyncProcessingWorkAcceptor.workAcceptor(userModel);
+            if (status[0] == "404") {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid Header");
+            }
+            Task task = new Task("update", status[1], bookModel);
             log.info("Start updateBook()");
-            bookService.updateBook(bookModel);
+            asyncProcessingBackgroundWorkerImpl.addToRequestQueue(task);
             log.info("End updateBook()");
-            return ResponseEntity.ok("successfully updated book");
+            return ResponseEntity.ok(status[1] + " " + status[0]);
         } catch (JpaObjectRetrievalFailureException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid BookType");
         }
