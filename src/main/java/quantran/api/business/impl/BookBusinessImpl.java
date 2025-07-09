@@ -6,85 +6,136 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import quantran.api.repository.BookRepository;
 import quantran.api.repository.BookTypeRepository;
-import quantran.api.BookType.BookType;
+import quantran.api.entity.BookType;
 import quantran.api.business.BookBusiness;
 import quantran.api.entity.BookEntity;
 import quantran.api.model.BookModel;
 import quantran.api.page.Paginate;
-import quantran.api.repository.BookRepository;
-import quantran.api.repository.BookTypeRepository;
+import quantran.api.exception.BookNotFoundException;
+import quantran.api.exception.DuplicateBookException;
+import quantran.api.config.CurrencyConfig;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @Log4j2
 @RequiredArgsConstructor
+@Transactional
 public class BookBusinessImpl implements BookBusiness {
     private final BookRepository bookRepository;
     private final BookTypeRepository bookTypeRepository;
+    private final CurrencyConfig currencyConfig;
+    
     @Override
     public List<BookType> getBookType() {
         log.info("Start getBookType()");
         List<BookType> bookTypes = bookTypeRepository.findAll();
-        log.info("End getBook()");
+        log.info("End getBookType(), found {} types", bookTypes.size());
         return bookTypes;
     }
+    
     @Override
-    public Paginate getBook(String searchId, String searchName, String searchAuthor, int page, int pageSize) {
-        log.info("Start getBook()");
-        int totalRecord = bookRepository.countByNameContainsAndAuthorContainsAndIdContains(searchName, searchAuthor, searchId);
-        int total = (totalRecord + pageSize - 1) / pageSize;
+    public Paginate<BookModel> getBook(String searchId, String searchName, String searchAuthor, String searchGenre, String searchPublisher, int page, int pageSize) {
+        log.info("Start getBook() - searchId: {}, searchName: {}, searchAuthor: {}, searchGenre: {}, searchPublisher: {}, page: {}, pageSize: {}", 
+                searchId, searchName, searchAuthor, searchGenre, searchPublisher, page, pageSize);
+        
+        // Normalize search parameters
+        String normalizedSearchId = searchId != null && !searchId.trim().isEmpty() ? searchId.trim() : null;
+        String normalizedSearchName = searchName != null && !searchName.trim().isEmpty() ? searchName.trim() : null;
+        String normalizedSearchAuthor = searchAuthor != null && !searchAuthor.trim().isEmpty() ? searchAuthor.trim() : null;
+        String normalizedSearchGenre = searchGenre != null && !searchGenre.trim().isEmpty() ? searchGenre.trim() : null;
+        String normalizedSearchPublisher = searchPublisher != null && !searchPublisher.trim().isEmpty() ? searchPublisher.trim() : null;
+        
         Pageable currentPage = PageRequest.of(page, pageSize);
-        Page<BookEntity> bookEntitiesPage = (bookRepository.findByNameContainsAndAuthorContainsAndIdContains(searchName, searchAuthor, searchId, currentPage));
-        List<BookEntity> bookEntities = bookEntitiesPage.getContent();
-        //List<BookEntity> bookEntities = (bookRepository.findByIdContainsAndNameContainsAndAuthorContains(searchName, searchAuthor, searchId));
-        Stream<BookModel> bookModelStream = bookEntities.stream().map(bookEntity -> new BookModel(bookEntity));
-        List<BookModel> bookModels =  bookModelStream.collect(Collectors.toList());
-        Paginate paginate = new Paginate(bookModels, total);
-        log.info("End getBook()");
+        Page<BookEntity> bookEntitiesPage = bookRepository.findBooksWithSearch(
+                normalizedSearchName, normalizedSearchAuthor, normalizedSearchId, normalizedSearchGenre, normalizedSearchPublisher, currentPage);
+        
+        List<BookModel> bookModels = bookEntitiesPage.getContent().stream()
+                .map(bookEntity -> new BookModel(bookEntity, currencyConfig))
+                .collect(Collectors.toList());
+        
+        int totalPages = bookEntitiesPage.getTotalPages();
+        Paginate<BookModel> paginate = new Paginate<>(bookModels, totalPages);
+        
+        log.info("End getBook(), found {} books, total pages: {}", bookModels.size(), totalPages);
         return paginate;
     }
+    
     @Override
     public String downloadBook() {
         log.info("Start downloadBook()");
         List<BookEntity> bookEntities = bookRepository.findAll();
-        Stream<BookModel> bookModelStream = bookEntities.stream().map(bookEntity -> new BookModel(bookEntity));
-        List<BookModel> bookModels =  bookModelStream.collect(Collectors.toList());
-        log.info("End downloadBook()");
-        return bookModels.stream().map(BookModel -> BookModel.getId() + "," + BookModel.getName() + "," + BookModel.getAuthor() + "," + BookModel.getBookType() + "," + BookModel.getPrice()).collect(Collectors.joining(System.lineSeparator()));
+        String csvContent = bookEntities.stream()
+                .map(bookEntity -> new BookModel(bookEntity, currencyConfig))
+                .map(bookModel -> String.format("%s,%s,%s,%s,%s", 
+                        bookModel.getId(), 
+                        bookModel.getName(), 
+                        bookModel.getAuthor(), 
+                        bookModel.getBookType(), 
+                        bookModel.getPrice()))
+                .collect(Collectors.joining(System.lineSeparator()));
+        
+        log.info("End downloadBook(), exported {} books", bookEntities.size());
+        return csvContent;
     }
+    
     @Override
     public void uploadBook(List<BookModel> bookModels) {
-        log.info("Start uploadBook()");
-        Stream<BookEntity> bookEntityStream = bookModels.stream().map(bookModel -> new BookEntity(bookModel));
-        List<BookEntity> bookEntities = bookEntityStream.collect(Collectors.toList());
+        log.info("Start uploadBook() with {} books", bookModels.size());
+        
+        List<BookEntity> bookEntities = bookModels.stream()
+                .map(BookEntity::new)
+                .collect(Collectors.toList());
+        
         bookRepository.saveAll(bookEntities);
-        log.info("End uploadBook()");
+        log.info("End uploadBook(), successfully uploaded {} books", bookEntities.size());
     }
+    
     @Override
     public void addBook(BookModel bookModel) {
-        log.info("Start addBook()");
-        if (!bookRepository.existsById(bookModel.getId())) {
-            bookRepository.save(new BookEntity(bookModel));
+        log.info("Start addBook() - ID: {}", bookModel.getId());
+        
+        // Check if book already exists by ID
+        if (bookRepository.existsById(bookModel.getId())) {
+            throw new DuplicateBookException("Book with ID " + bookModel.getId() + " already exists");
         }
-        log.info("End addBook()");
+        
+        // Check if book already exists by title and author
+        if (bookRepository.existsByTitleAndAuthor(bookModel.getName(), bookModel.getAuthor())) {
+            throw new DuplicateBookException("Book with title '" + bookModel.getName() + "' by author '" + bookModel.getAuthor() + "' already exists");
+        }
+        
+        BookEntity bookEntity = new BookEntity(bookModel);
+        bookRepository.save(bookEntity);
+        log.info("End addBook(), successfully added book with ID: {}", bookModel.getId());
     }
+    
     @Override
     public void delBook(String delId) {
-        log.info("Start delBook()");
+        log.info("Start delBook() - ID: {}", delId);
+        
+        if (!bookRepository.existsById(delId)) {
+            throw new BookNotFoundException("Book with ID " + delId + " not found");
+        }
+        
         bookRepository.deleteById(delId);
-        log.info("End delBook()");
+        log.info("End delBook(), successfully deleted book with ID: {}", delId);
     }
+    
     @Override
     public void updateBook(BookModel bookModel) {
-        log.info("Start updateBook()");
-        if (bookRepository.existsById(bookModel.getId())) {
-            bookRepository.save(new BookEntity(bookModel));
+        log.info("Start updateBook() - ID: {}", bookModel.getId());
+        
+        if (!bookRepository.existsById(bookModel.getId())) {
+            throw new BookNotFoundException("Book with ID " + bookModel.getId() + " not found");
         }
-        log.info("End updateBook()");
+        
+        BookEntity bookEntity = new BookEntity(bookModel);
+        bookRepository.save(bookEntity);
+        log.info("End updateBook(), successfully updated book with ID: {}", bookModel.getId());
     }
 }
