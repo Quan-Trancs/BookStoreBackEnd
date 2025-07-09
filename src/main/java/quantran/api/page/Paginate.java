@@ -1,21 +1,22 @@
 package quantran.api.page;
 
+import quantran.api.model.BookModel;
+
 import java.util.List;
 
-public class Paginate<T> {
-    private List<T> data;
+public class Paginate {
+    private List<BookModel> data;
     private int total;
 
-    public Paginate(List<T> data, int total) {
+    public Paginate(List<BookModel> data, int total) {
         this.data = data;
         this.total = total;
     }
-    
-    public List<T> getData() {
+    public List<BookModel> getData() {
         return data;
     }
 
-    public void setData(List<T> data) {
+    public void setData(List<BookModel> data) {
         this.data = data;
     }
 
@@ -26,4 +27,5 @@ public class Paginate<T> {
     public void setTotal(int total) {
         this.total = total;
     }
+
 }

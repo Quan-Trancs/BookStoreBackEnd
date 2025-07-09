@@ -1,12 +1,10 @@
 package quantran.api.model;
 
 import quantran.api.entity.BookEntity;
-import quantran.api.config.CurrencyConfig;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
-import java.math.BigDecimal;
 
 public class BookModel {
     @NotNull(message = "book's id is required")
@@ -29,13 +27,12 @@ public class BookModel {
         this.price = price;
         this.bookType = bookType;
     }
-    public BookModel(BookEntity bookEntity, CurrencyConfig currencyConfig) {
+    public BookModel(BookEntity bookEntity) {
         this.id = bookEntity.getId();
-        this.name = bookEntity.getTitle();
-        this.author = bookEntity.getAuthorNames();
-        BigDecimal displayPrice = currencyConfig.convertToDisplayCurrency(bookEntity.getPrice());
-        this.price = currencyConfig.formatPrice(displayPrice, currencyConfig.getDisplayCurrency());
-        this.bookType = bookEntity.getGenreNames();
+        this.name = bookEntity.getName();
+        this.author = bookEntity.getAuthor();
+        this.price = String.format("%.0f VND", bookEntity.getPrice() * 23000);
+        this.bookType = bookEntity.getBookType().getBookType();
     }
 
     public String getId() {
