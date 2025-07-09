@@ -25,7 +25,7 @@ public class UserRole {
         return this.roleName;
     }
 
-    public void setUserRole(int secretField) {
+    public void setUserRole(int roleId) {
         this.roleId = roleId;
     }
 }

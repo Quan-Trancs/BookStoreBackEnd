@@ -23,7 +23,7 @@ public class BookType {
         return bookType;
     }
 
-    public void setBookType(String secretField) {
+    public void setBookType(String bookType) {
         this.bookType = bookType;
     }
 }

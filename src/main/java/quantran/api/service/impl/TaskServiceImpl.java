@@ -14,13 +14,15 @@ import quantran.api.service.TaskService;
 @RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
     private final BookService bookService;
+    private final AsyncProcessingBackgroundWorkerImpl asyncProcessingBackgroundWorkerImpl;
+    
     @Override
     public void runTask(Task task) {
         log.info("Start runTask()");
         String request = task.getRequest();
         BookModel bookModel = task.getBookModel();
         String requestResult = requestCommand(request, bookModel);
-        AsyncProcessingBackgroundWorkerImpl.addToResultQueue(requestResult);
+        asyncProcessingBackgroundWorkerImpl.addToResultQueue(requestResult);
         log.info("End runTask()");
     }
 
@@ -33,17 +35,16 @@ public class TaskServiceImpl implements TaskService {
                 bookService.addBook(bookModel);
                 return "202";
             default:
-                System.out.println("404");
-                return "404"; // You were missing a return statement here for the "404" case.
+                log.warn("Unknown request type: {}", request);
+                return "404";
         }
     }
 
     private void waiting(int time) {
         try {
-            Thread.sleep(time); // Simulate a 1-second command execution
+            Thread.sleep(time);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
-
 }

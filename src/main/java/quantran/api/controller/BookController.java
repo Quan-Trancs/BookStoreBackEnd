@@ -80,7 +80,12 @@ public class BookController {
     }
     @PostMapping(UrlConstant.ADDBOOK)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<String> addBook(@RequestParam String addId, @RequestParam String addName, @RequestParam String addBookType,@RequestParam String addAuthor, @RequestParam String addPrice) {
+    public ResponseEntity<String> addBook(
+            @RequestParam @NotBlank(message = "Book ID is required") String addId, 
+            @RequestParam @NotBlank(message = "Book name is required") String addName, 
+            @RequestParam @NotBlank(message = "Book type is required") String addBookType,
+            @RequestParam @NotBlank(message = "Author is required") String addAuthor, 
+            @RequestParam @NotBlank(message = "Price is required") String addPrice) {
         BookModel bookModel = new BookModel(addId.trim(), addName, addAuthor, addPrice, addBookType);
         Set<ConstraintViolation<BookModel>> violations = validator.validate(bookModel);
         if(!violations.isEmpty()){
@@ -104,26 +109,30 @@ public class BookController {
             log.info("End delBook()");
             return ResponseEntity.ok("successfully deleted book");
         } catch (EmptyResultDataAccessException e) {
-            StringBuilder errorMessage = new StringBuilder();
-            // Iterate through constraint violations and append them to the error message
-            errorMessage.append(HttpStatus.BAD_REQUEST).append(": \n");
-            errorMessage.append("Invalid Book ID").append(". \n");
-            // Return the error message
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage.toString());
+            log.warn("Attempted to delete non-existent book with ID: {}", delId);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: Book with ID '" + delId + "' not found");
         }
     }
     @PostMapping(UrlConstant.UPDATEBOOK)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<String> updateBook(@RequestHeader String name, @RequestHeader String key, @RequestParam String updateId, @RequestParam String updateName, @RequestParam String updateType, @RequestParam String updateAuthor, @RequestParam String updatePrice) {
+    public ResponseEntity<String> updateBook(
+            @RequestHeader @NotBlank(message = "User name is required") String name, 
+            @RequestHeader @NotBlank(message = "User key is required") String key, 
+            @RequestParam @NotBlank(message = "Book ID is required") String updateId, 
+            @RequestParam @NotBlank(message = "Book name is required") String updateName, 
+            @RequestParam @NotBlank(message = "Book type is required") String updateType, 
+            @RequestParam @NotBlank(message = "Author is required") String updateAuthor, 
+            @RequestParam @NotBlank(message = "Price is required") String updatePrice) {
         BookModel bookModel = new BookModel(updateId.trim(), updateName, updateAuthor, updatePrice, updateType);
         UserModel userModel = new UserModel(name, key);
         Set<ConstraintViolation<BookModel>> violations = validator.validate(bookModel);
         if(!violations.isEmpty()){
-            return errorHandler.errorHandle(violations); //need to add handler
+            return errorHandler.errorHandle(violations);
         }
         try {
             String[] status = asyncProcessingWorkAcceptor.workAcceptor(userModel);
-            if (status[0] == "404") {
+            if ("404".equals(status[0])) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid Header");
             }
             Task task = new Task("update", status[1], bookModel);

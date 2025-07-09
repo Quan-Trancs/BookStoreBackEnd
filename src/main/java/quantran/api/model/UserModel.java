@@ -59,10 +59,10 @@ public class UserModel {
     }
 
     public int getUserRole() {
-        if (userRole == "customer") {
+        if ("customer".equals(userRole)) {
             return 1;
         }
-        if (userRole == "seller") {
+        if ("seller".equals(userRole)) {
             return 1;
         }
         return 3;

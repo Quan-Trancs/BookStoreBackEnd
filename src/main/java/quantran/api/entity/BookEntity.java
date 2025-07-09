@@ -4,6 +4,8 @@ import quantran.api.BookType.BookType;
 import quantran.api.model.BookModel;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 @Table(name = "book")
@@ -26,7 +28,7 @@ public class BookEntity {
         this.id = bookModel.getId();
         this.name = bookModel.getName();
         this.author = bookModel.getAuthor();
-        this.price = Double.parseDouble(bookModel.getPrice().substring(0, bookModel.getPrice().length() - 3))/23000;
+        this.price = parsePrice(bookModel.getPrice());
         BookType newBookType = new BookType(bookModel.getBookType());
         this.bookType = newBookType;
     }
@@ -44,6 +46,19 @@ public class BookEntity {
         BookType newBookType = new BookType(bookType);
         this.bookType = newBookType;
         this.price = price;
+    }
+
+    private double parsePrice(String priceString) {
+        try {
+            // Remove "VND" suffix and parse the number
+            String numericPart = priceString.replaceAll("(?i)vnd$", "").trim();
+            BigDecimal price = new BigDecimal(numericPart);
+            // Convert from VND to USD (assuming 23000 VND = 1 USD)
+            BigDecimal usdPrice = price.divide(BigDecimal.valueOf(23000), 2, RoundingMode.HALF_UP);
+            return usdPrice.doubleValue();
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid price format: " + priceString);
+        }
     }
 
     public String getId() {

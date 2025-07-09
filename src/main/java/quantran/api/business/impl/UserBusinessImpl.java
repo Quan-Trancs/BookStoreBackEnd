@@ -9,6 +9,7 @@ import quantran.api.entity.BookEntity;
 import quantran.api.entity.UserEntity;
 import quantran.api.repository.UserRepository;
 import quantran.api.service.UserService;
+import quantran.api.util.PasswordUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,27 +21,37 @@ public class UserBusinessImpl implements UserBusiness {
     private final UserRepository userRepository;
     @Override
     public String login(UserEntity userEntity, String newKey) {
-        String key = newKey;
         log.info("Start login()");
         String userName = userEntity.getUserName();
         String password = userEntity.getPassword();
-        boolean loginStatus = userRepository.existsByUserNameAndPassword(userName, password);
-        userRepository.save(userEntity);
-        if (loginStatus) {
-            UserEntity loginedUserEntity = userRepository.findByUserName(userName);
-            String userKey = loginedUserEntity.getKey();
-            if (userKey != null && userKey != "") {
-                key = userKey;
+        
+        // Get existing user entity to check credentials
+        UserEntity existingUserEntity = userRepository.findByUserName(userName);
+        
+        if (existingUserEntity != null) {
+            // Verify password using hashed password
+            String storedPassword = existingUserEntity.getPassword();
+            boolean passwordValid = PasswordUtil.verifyPassword(password, storedPassword);
+            
+            if (passwordValid) {
+                String userKey = existingUserEntity.getKey();
+                
+                // If user already has a key, use it; otherwise, set the new key
+                if (userKey != null && !userKey.isEmpty()) {
+                    return userKey;
+                } else {
+                    // Update the existing user with the new key
+                    existingUserEntity.setKey(newKey);
+                    userRepository.save(existingUserEntity);
+                    return newKey;
+                }
+            } else {
+                log.warn("Invalid password for user: {}", userName);
+                return "false";
             }
-            else {
-                userEntity.setKey(key);
-            }
+        } else {
+            log.warn("User not found: {}", userName);
+            return "false";
         }
-        else return "false";
-        //List<UserEntity> list = userRepository.findAll();
-        //log.info(list);
-        log.info("End login()");
-        //return key;
-        return key;
     }
 }

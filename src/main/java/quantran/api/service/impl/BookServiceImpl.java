@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -59,9 +60,51 @@ public class BookServiceImpl implements BookService {
     @Override
     public void uploadBook(MultipartFile bookFile) throws IOException {
         log.info("Start uploadBook()");
-        BufferedReader bookReader = new BufferedReader(new InputStreamReader(bookFile.getInputStream()));
-        List<BookModel> bookList = bookReader.lines().map(line -> line.split(",")).map(data -> new BookModel(data[0], data[1], data[2], data[4], data[3])).collect(Collectors.toList());
-        bookBusiness.uploadBook(bookList);
+        List<BookModel> bookList = new ArrayList<>();
+        
+        try (BufferedReader bookReader = new BufferedReader(new InputStreamReader(bookFile.getInputStream()))) {
+            String line;
+            int lineNumber = 0;
+            
+            while ((line = bookReader.readLine()) != null) {
+                lineNumber++;
+                try {
+                    String[] data = line.split(",");
+                    
+                    // Validate CSV format - should have exactly 5 columns
+                    if (data.length != 5) {
+                        log.warn("Skipping line {}: Invalid CSV format. Expected 5 columns, found {}", lineNumber, data.length);
+                        continue;
+                    }
+                    
+                    // Validate that required fields are not empty
+                    if (data[0].trim().isEmpty() || data[1].trim().isEmpty() || 
+                        data[2].trim().isEmpty() || data[3].trim().isEmpty() || data[4].trim().isEmpty()) {
+                        log.warn("Skipping line {}: Empty required fields", lineNumber);
+                        continue;
+                    }
+                    
+                    BookModel bookModel = new BookModel(
+                        data[0].trim(), // id
+                        data[1].trim(), // name
+                        data[2].trim(), // author
+                        data[4].trim(), // price
+                        data[3].trim()  // bookType
+                    );
+                    bookList.add(bookModel);
+                    
+                } catch (Exception e) {
+                    log.error("Error processing line {}: {}", lineNumber, e.getMessage());
+                }
+            }
+        }
+        
+        if (!bookList.isEmpty()) {
+            bookBusiness.uploadBook(bookList);
+        } else {
+            log.warn("No valid books found in uploaded file");
+        }
+        
         log.info("End uploadBook()");
     }
     @Override
