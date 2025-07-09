@@ -1,7 +1,7 @@
 package quantran.api.entity;
 
 
-import quantran.api.BookType.BookType;
+import quantran.api.entity.BookType;
 import quantran.api.UserRole.UserRole;
 import quantran.api.model.UserModel;
 
