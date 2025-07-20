@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import quantran.api.entity.BookType;
@@ -22,6 +23,9 @@ import quantran.api.asyncProcessingBackgroundWorker.task.Task;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
 import java.io.IOException;
 import java.util.List;
 
@@ -29,7 +33,7 @@ import java.util.List;
 @Log4j2
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/books")
-@CrossOrigin(origins = "*")
+@Validated
 public class RestBookController {
     
     private final BookService bookService;
@@ -78,9 +82,9 @@ public class RestBookController {
         
         BookModel bookModel = new BookModel(
             bookRequest.getId(),
-            bookRequest.getName(),
+            bookRequest.getTitle(),
             bookRequest.getAuthor(),
-            bookRequest.getPrice(),
+            bookRequest.getPrice().toString(),
             bookRequest.getBookType()
         );
         
@@ -105,9 +109,9 @@ public class RestBookController {
         
         BookModel bookModel = new BookModel(
             bookRequest.getId(),
-            bookRequest.getName(),
+            bookRequest.getTitle(),
             bookRequest.getAuthor(),
-            bookRequest.getPrice(),
+            bookRequest.getPrice().toString(),
             bookRequest.getBookType()
         );
         
@@ -141,9 +145,9 @@ public class RestBookController {
         
         BookModel bookModel = new BookModel(
             bookRequest.getId(),
-            bookRequest.getName(),
+            bookRequest.getTitle(),
             bookRequest.getAuthor(),
-            bookRequest.getPrice(),
+            bookRequest.getPrice().toString(),
             bookRequest.getBookType()
         );
         
