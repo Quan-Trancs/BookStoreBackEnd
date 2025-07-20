@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import quantran.api.entity.Publisher;
@@ -57,6 +58,7 @@ public interface PublisherRepository extends JpaRepository<Publisher, Long> {
     /**
      * Search publishers with pagination
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT p FROM Publisher p WHERE " +
            "(:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
            "(:country IS NULL OR LOWER(p.country) LIKE LOWER(CONCAT('%', :country, '%'))) AND " +
@@ -72,12 +74,14 @@ public interface PublisherRepository extends JpaRepository<Publisher, Long> {
     /**
      * Find publishers with book count greater than specified
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT p FROM Publisher p WHERE SIZE(p.books) > :minBookCount")
     List<Publisher> findByBookCountGreaterThan(@Param("minBookCount") int minBookCount);
     
     /**
      * Find publishers by book genre
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT DISTINCT p FROM Publisher p JOIN p.books b JOIN b.genres g WHERE g.name = :genreName")
     List<Publisher> findByBookGenre(@Param("genreName") String genreName);
     
@@ -90,12 +94,14 @@ public interface PublisherRepository extends JpaRepository<Publisher, Long> {
     /**
      * Get publishers with most books
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT p FROM Publisher p ORDER BY SIZE(p.books) DESC")
     List<Publisher> findTopPublishersByBookCount(Pageable pageable);
     
     /**
      * Find publishers by book author
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT DISTINCT p FROM Publisher p JOIN p.books b JOIN b.authors a WHERE a.name = :authorName")
     List<Publisher> findByBookAuthor(@Param("authorName") String authorName);
 } 

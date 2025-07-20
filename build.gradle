@@ -19,6 +19,7 @@ dependencies {
 	implementation 'me.paulschwarz:spring-dotenv:2.5.4'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'io.jsonwebtoken:jjwt:0.9.1'
 
 	runtimeOnly 'org.postgresql:postgresql'
 	// Lombok

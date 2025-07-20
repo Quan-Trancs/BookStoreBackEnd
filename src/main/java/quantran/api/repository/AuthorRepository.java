@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 import quantran.api.entity.Author;
 
@@ -18,44 +19,52 @@ public interface AuthorRepository extends JpaRepository<Author, Long> {
     /**
      * Find authors by name (case-insensitive)
      */
+    @EntityGraph(attributePaths = {"books"})
     List<Author> findByNameContainingIgnoreCase(String name);
     
     /**
      * Find author by exact name
      */
+    @EntityGraph(attributePaths = {"books"})
     Optional<Author> findByNameIgnoreCase(String name);
     
     /**
      * Find authors by country
      */
+    @EntityGraph(attributePaths = {"books"})
     List<Author> findByCountryIgnoreCase(String country);
     
     /**
      * Find living authors
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT a FROM Author a WHERE a.deathDate IS NULL")
     List<Author> findLivingAuthors();
     
     /**
      * Find authors by birth year range
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT a FROM Author a WHERE YEAR(a.birthDate) BETWEEN :startYear AND :endYear")
     List<Author> findByBirthYearRange(@Param("startYear") int startYear, @Param("endYear") int endYear);
     
     /**
      * Find authors with book count greater than specified
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT a FROM Author a WHERE SIZE(a.books) > :minBookCount")
     List<Author> findByBookCountGreaterThan(@Param("minBookCount") int minBookCount);
     
     /**
      * Find authors by active status
      */
+    @EntityGraph(attributePaths = {"books"})
     List<Author> findByIsActive(Boolean isActive);
     
     /**
      * Search authors with pagination
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT a FROM Author a WHERE " +
            "(:name IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
            "(:country IS NULL OR LOWER(a.country) LIKE LOWER(CONCAT('%', :country, '%'))) AND " +
@@ -69,24 +78,28 @@ public interface AuthorRepository extends JpaRepository<Author, Long> {
     /**
      * Find authors by book genre
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT DISTINCT a FROM Author a JOIN a.books b JOIN b.genres g WHERE g.name = :genreName")
     List<Author> findByBookGenre(@Param("genreName") String genreName);
     
     /**
      * Find authors by book publisher
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT DISTINCT a FROM Author a JOIN a.books b WHERE b.publisher.name = :publisherName")
     List<Author> findByBookPublisher(@Param("publisherName") String publisherName);
     
     /**
      * Get total count of authors
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT COUNT(a) FROM Author a")
     long getTotalAuthorCount();
     
     /**
      * Get authors with most books
      */
+    @EntityGraph(attributePaths = {"books"})
     @Query("SELECT a FROM Author a ORDER BY SIZE(a.books) DESC")
     List<Author> findTopAuthorsByBookCount(Pageable pageable);
 } 

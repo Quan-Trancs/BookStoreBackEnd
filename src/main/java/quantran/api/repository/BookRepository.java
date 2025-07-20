@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import quantran.api.entity.BookEntity;
@@ -18,6 +19,7 @@ public interface BookRepository extends JpaRepository<BookEntity, String> {
     /**
      * Find books with search criteria and pagination
      */
+    @EntityGraph(attributePaths = {"authors", "genres", "publisher"})
     @Query("SELECT DISTINCT b FROM BookEntity b " +
            "LEFT JOIN b.authors a " +
            "LEFT JOIN b.genres g " +
@@ -57,6 +59,7 @@ public interface BookRepository extends JpaRepository<BookEntity, String> {
     /**
      * Find books by genre
      */
+    @EntityGraph(attributePaths = {"authors", "genres", "publisher"})
     @Query("SELECT b FROM BookEntity b JOIN b.genres g WHERE g.id = :genreId")
     List<BookEntity> findByGenreId(@Param("genreId") String genreId);
     
@@ -68,12 +71,14 @@ public interface BookRepository extends JpaRepository<BookEntity, String> {
     /**
      * Find books by author
      */
+    @EntityGraph(attributePaths = {"authors", "genres", "publisher"})
     @Query("SELECT b FROM BookEntity b JOIN b.authors a WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :authorName, '%'))")
     List<BookEntity> findByAuthorName(@Param("authorName") String authorName);
     
     /**
      * Find books by author ID
      */
+    @EntityGraph(attributePaths = {"authors", "genres", "publisher"})
     @Query("SELECT b FROM BookEntity b JOIN b.authors a WHERE a.id = :authorId")
     List<BookEntity> findByAuthorId(@Param("authorId") Long authorId);
     
@@ -106,6 +111,7 @@ public interface BookRepository extends JpaRepository<BookEntity, String> {
     /**
      * Find books by publisher
      */
+    @EntityGraph(attributePaths = {"authors", "genres", "publisher"})
     @Query("SELECT b FROM BookEntity b WHERE b.publisher.id = :publisherId")
     List<BookEntity> findByPublisherId(@Param("publisherId") Long publisherId);
     
