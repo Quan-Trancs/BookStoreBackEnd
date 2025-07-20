@@ -1,7 +1,6 @@
 package quantran.api.model;
 
 import quantran.api.entity.BookEntity;
-import quantran.api.config.CurrencyConfig;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -16,7 +15,7 @@ public class BookModel {
     private String author;
     @NotNull(message = "book's price is required")
     @NotEmpty(message = "book's price is required")
-    @Pattern(regexp = "(?i)^[1-9]\\d*(vnd)$", message = "invalid price input")
+    @Pattern(regexp = "(?i)^[1-9]\\d*(vnd|usd|eur)$", message = "invalid price input - must end with VND, USD, or EUR")
     private String price;
     @NotNull(message = "book's type is required")
     @NotEmpty(message = "book's type is required")
@@ -29,12 +28,13 @@ public class BookModel {
         this.price = price;
         this.bookType = bookType;
     }
-    public BookModel(BookEntity bookEntity, CurrencyConfig currencyConfig) {
+    public BookModel(BookEntity bookEntity) {
         this.id = bookEntity.getId();
         this.name = bookEntity.getTitle();
         this.author = bookEntity.getAuthorNames();
-        BigDecimal displayPrice = currencyConfig.convertToDisplayCurrency(bookEntity.getPrice());
-        this.price = currencyConfig.formatPrice(displayPrice, currencyConfig.getDisplayCurrency());
+        
+        // Return price in USD - frontend will handle currency conversion
+        this.price = String.format("%.2f USD", bookEntity.getPrice());
         this.bookType = bookEntity.getGenreNames();
     }
 

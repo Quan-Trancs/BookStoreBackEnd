@@ -16,7 +16,6 @@ import quantran.api.model.BookModel;
 import quantran.api.page.Paginate;
 import quantran.api.exception.BookNotFoundException;
 import quantran.api.exception.DuplicateBookException;
-import quantran.api.config.CurrencyConfig;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,7 +27,6 @@ import java.util.stream.Collectors;
 public class BookBusinessImpl implements BookBusiness {
     private final BookRepository bookRepository;
     private final BookTypeRepository bookTypeRepository;
-    private final CurrencyConfig currencyConfig;
     
     @Override
     public List<BookType> getBookType() {
@@ -55,7 +53,7 @@ public class BookBusinessImpl implements BookBusiness {
                 normalizedSearchName, normalizedSearchAuthor, normalizedSearchId, normalizedSearchGenre, normalizedSearchPublisher, currentPage);
         
         List<BookModel> bookModels = bookEntitiesPage.getContent().stream()
-                .map(bookEntity -> new BookModel(bookEntity, currencyConfig))
+                .map(BookModel::new)
                 .collect(Collectors.toList());
         
         int totalPages = bookEntitiesPage.getTotalPages();
@@ -70,7 +68,7 @@ public class BookBusinessImpl implements BookBusiness {
         log.info("Start downloadBook()");
         List<BookEntity> bookEntities = bookRepository.findAll();
         String csvContent = bookEntities.stream()
-                .map(bookEntity -> new BookModel(bookEntity, currencyConfig))
+                .map(BookModel::new)
                 .map(bookModel -> String.format("%s,%s,%s,%s,%s", 
                         bookModel.getId(), 
                         bookModel.getName(), 

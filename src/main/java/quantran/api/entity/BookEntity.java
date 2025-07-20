@@ -64,6 +64,8 @@ public class BookEntity {
     @Positive(message = "Price must be positive")
     private BigDecimal price;
     
+
+    
     @Column(name = "original_price", precision = 10, scale = 2)
     private BigDecimal originalPrice;
     
@@ -149,11 +151,13 @@ public class BookEntity {
 
     private BigDecimal parsePrice(String priceString) {
         try {
-            // Remove currency suffix and parse the number
+            // Extract numeric value from price string (e.g., "1000VND" -> 1000)
             String numericPart = priceString.replaceAll("(?i)(vnd|usd|eur)$", "").trim();
             BigDecimal price = new BigDecimal(numericPart);
-            // Convert from display currency to USD (assuming 23000 VND = 1 USD)
-            return price.divide(BigDecimal.valueOf(23000), 2, RoundingMode.HALF_UP);
+            
+            // Always store in USD (frontend will handle currency conversion)
+            // For now, we'll store the raw value and let frontend convert
+            return price;
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid price format: " + priceString);
         }
@@ -260,6 +264,8 @@ public class BookEntity {
     public void setPrice(BigDecimal price) {
         this.price = price;
     }
+    
+
 
     public BigDecimal getOriginalPrice() {
         return originalPrice;
