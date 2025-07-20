@@ -8,8 +8,19 @@ import quantran.api.model.UserModel;
 import javax.validation.ConstraintViolation;
 import java.util.Set;
 
+/**
+ * @deprecated This class is deprecated. Use {@link GenericErrorHandler} instead for generic error handling.
+ * The GenericErrorHandler provides the same functionality with better type safety and reusability.
+ */
+@Deprecated
 @Component
 public class UserErrorHandler {
+    
+    /**
+     * @deprecated Use {@link GenericErrorHandler#errorHandle(Set)} instead.
+     * This method will be removed in a future version.
+     */
+    @Deprecated
     public static ResponseEntity<String> errorHandle(Set<ConstraintViolation<UserModel>> violations) {
         StringBuilder errorMessage = new StringBuilder();
         // Iterate through constraint violations and append them to the error message

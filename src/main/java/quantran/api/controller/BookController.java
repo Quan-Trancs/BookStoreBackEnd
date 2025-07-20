@@ -14,7 +14,7 @@ import quantran.api.asyncProcessingBackgroundWorker.impl.AsyncProcessingBackgrou
 import quantran.api.asyncProcessingBackgroundWorker.task.Task;
 import quantran.api.asyncProcessingWorkAcceptor.AsyncProcessingWorkAcceptor;
 import quantran.api.common.UrlConstant;
-import quantran.api.errorHandle.ErrorHandler;
+import quantran.api.errorHandle.GenericErrorHandler;
 import quantran.api.model.BookModel;
 import quantran.api.model.UserModel;
 import quantran.api.page.Paginate;
@@ -42,7 +42,6 @@ import static java.lang.Integer.parseInt;
 public class BookController {
     private final BookService bookService;
     private final TaskService taskService;
-    private final ErrorHandler errorHandler;
     private final Validator validator;
     private final AsyncProcessingWorkAcceptor asyncProcessingWorkAcceptor;
     private final AsyncProcessingBackgroundWorkerImpl asyncProcessingBackgroundWorkerImpl;
@@ -93,7 +92,7 @@ public class BookController {
         BookModel bookModel = new BookModel(addId.trim(), addName, addAuthor, addPrice, addBookType);
         Set<ConstraintViolation<BookModel>> violations = validator.validate(bookModel);
         if(!violations.isEmpty()){
-            return errorHandler.errorHandle(violations);
+            return GenericErrorHandler.errorHandle(violations);
         }
         try {
             log.info("Start addBook()");
