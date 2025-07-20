@@ -7,7 +7,7 @@ import quantran.api.page.Paginate;
 import java.util.List;
 import java.util.Optional;
 
-public interface PublisherService {
+public interface PublisherService extends BaseService<Publisher, Long> {
     
     /**
      * Get all publishers with pagination and search
@@ -15,29 +15,9 @@ public interface PublisherService {
     Paginate<Publisher> getPublishers(String searchName, String searchCountry, String searchCity, Boolean isActive, int page, int pageSize);
     
     /**
-     * Get publisher by ID
-     */
-    Optional<Publisher> getPublisherById(Long id);
-    
-    /**
      * Get publisher by name
      */
     Optional<Publisher> getPublisherByName(String name);
-    
-    /**
-     * Create a new publisher
-     */
-    Publisher createPublisher(Publisher publisher);
-    
-    /**
-     * Update an existing publisher
-     */
-    Publisher updatePublisher(Long id, Publisher publisher);
-    
-    /**
-     * Delete a publisher
-     */
-    void deletePublisher(Long id);
     
     /**
      * Get publishers by country
@@ -50,7 +30,7 @@ public interface PublisherService {
     List<Publisher> getPublishersByCity(String city);
     
     /**
-     * Get publishers founded in a specific year
+     * Get publishers by founded year
      */
     List<Publisher> getPublishersByFoundedYear(Integer foundedYear);
     
@@ -65,7 +45,7 @@ public interface PublisherService {
     List<Publisher> getPublishersFoundedAfter(Integer year);
     
     /**
-     * Get publishers with most books
+     * Get top publishers by book count
      */
     List<Publisher> getTopPublishersByBookCount(int limit);
     

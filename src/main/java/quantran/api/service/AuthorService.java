@@ -7,7 +7,7 @@ import quantran.api.page.Paginate;
 import java.util.List;
 import java.util.Optional;
 
-public interface AuthorService {
+public interface AuthorService extends BaseService<Author, Long> {
     
     /**
      * Get all authors with pagination and search
@@ -15,29 +15,9 @@ public interface AuthorService {
     Paginate<Author> getAuthors(String searchName, String searchCountry, Boolean isAlive, int page, int pageSize);
     
     /**
-     * Get author by ID
-     */
-    Optional<Author> getAuthorById(Long id);
-    
-    /**
      * Get author by name
      */
     Optional<Author> getAuthorByName(String name);
-    
-    /**
-     * Create a new author
-     */
-    Author createAuthor(Author author);
-    
-    /**
-     * Update an existing author
-     */
-    Author updateAuthor(Long id, Author author);
-    
-    /**
-     * Delete an author
-     */
-    void deleteAuthor(Long id);
     
     /**
      * Get authors by country

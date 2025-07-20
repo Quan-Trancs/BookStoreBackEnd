@@ -6,6 +6,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import quantran.api.dto.BookDetailDto;
@@ -23,29 +24,27 @@ import quantran.api.service.TaskService;
 import quantran.api.dto.AsyncTaskRequest;
 import quantran.api.service.AsyncTaskService;
 
-import javax.validation.ConstraintViolation;
 import javax.validation.Valid;
-import javax.validation.Validator;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 import static java.lang.Integer.parseInt;
 
 @RestController
 @Log4j2
 @RequiredArgsConstructor
+@Validated
 @RequestMapping(UrlConstant.BOOK)
 public class BookController {
     private final BookService bookService;
     private final TaskService taskService;
-    private final Validator validator;
     private final AsyncProcessingWorkAcceptor asyncProcessingWorkAcceptor;
     private final AsyncProcessingBackgroundWorkerImpl asyncProcessingBackgroundWorkerImpl;
     private final AsyncTaskService asyncTaskService;
+    
     @GetMapping(UrlConstant.LIST)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public ResponseEntity<Paginate> list( @RequestParam (defaultValue = "") String searchName, @RequestParam (defaultValue = "") String searchAuthor, @RequestParam (defaultValue = "") String searchId, @RequestParam (defaultValue = "0") String page, @RequestParam (defaultValue = "5") String pageSize) {
@@ -56,6 +55,7 @@ public class BookController {
         log.info("End list()");
         return ResponseEntity.ok(result);
     }
+    
     @GetMapping(UrlConstant.TYPE)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public ResponseEntity<List<BookType>> getBookType() {
@@ -66,6 +66,7 @@ public class BookController {
         log.info("End list()");
         return ResponseEntity.ok(result);
     }
+    
     @GetMapping(UrlConstant.DOWNLOAD)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public ResponseEntity<byte[]> downloadBook() throws IOException {
@@ -74,6 +75,7 @@ public class BookController {
         log.info("End downloadBook()");
         return result;
     }
+    
     @PostMapping(UrlConstant.UPLOAD)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public void uploadBook(@RequestParam MultipartFile bookFile) throws IOException {
@@ -81,6 +83,7 @@ public class BookController {
         bookService.uploadBook(bookFile);
         log.info("End uploadBook()");
     }
+    
     @PostMapping(UrlConstant.ADDBOOK)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public ResponseEntity<String> addBook(
@@ -90,19 +93,18 @@ public class BookController {
             @RequestParam @NotBlank(message = "Author is required") String addAuthor, 
             @RequestParam @NotBlank(message = "Price is required") String addPrice) {
         BookModel bookModel = new BookModel(addId.trim(), addName, addAuthor, addPrice, addBookType);
-        Set<ConstraintViolation<BookModel>> violations = validator.validate(bookModel);
-        if(!violations.isEmpty()){
-            return GenericErrorHandler.errorHandle(violations);
-        }
         try {
             log.info("Start addBook()");
             bookService.addBook(bookModel);
             log.info("End addBook()");
-            return ResponseEntity.ok("successfully added book");
-        } catch (JpaObjectRetrievalFailureException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid BookType");
+            return ResponseEntity.ok("Book added successfully");
+        } catch (Exception e) {
+            log.error("Error adding book: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error adding book: " + e.getMessage());
         }
     }
+    
     @PostMapping(UrlConstant.DELBOOK)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public ResponseEntity<String> delBook(@Valid @RequestParam("delId") @NotNull(message = "Delete ID is required!") @NotEmpty(message = "Delete ID is required") @NotBlank(message = "Invalid delete ID!") String delId) {
@@ -110,13 +112,18 @@ public class BookController {
             log.info("Start delBook()");
             bookService.delBook(delId);
             log.info("End delBook()");
-            return ResponseEntity.ok("successfully deleted book");
+            return ResponseEntity.ok("Book deleted successfully");
         } catch (EmptyResultDataAccessException e) {
-            log.warn("Attempted to delete non-existent book with ID: {}", delId);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Error: Book with ID '" + delId + "' not found");
+            log.error("Book not found for deletion: {}", delId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Book not found with ID: " + delId);
+        } catch (Exception e) {
+            log.error("Error deleting book: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting book: " + e.getMessage());
         }
     }
+    
     @PostMapping(UrlConstant.UPDATEBOOK)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public ResponseEntity<AsyncTaskRequest> updateBook(
@@ -132,12 +139,6 @@ public class BookController {
         
         BookModel bookModel = new BookModel(updateId.trim(), updateName, updateAuthor, updatePrice, updateType);
         UserModel userModel = new UserModel(name, key);
-        
-        // Validate book model
-        Set<ConstraintViolation<BookModel>> violations = validator.validate(bookModel);
-        if(!violations.isEmpty()){
-            return ResponseEntity.badRequest().build();
-        }
         
         try {
             // Validate user authentication

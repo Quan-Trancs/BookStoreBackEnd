@@ -5,13 +5,14 @@ import quantran.api.entity.Author;
 import quantran.api.page.Paginate;
 import quantran.api.repository.AuthorRepository;
 import quantran.api.service.AuthorService;
+import quantran.api.service.AbstractBaseService;
+import quantran.api.util.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,110 +21,99 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class AuthorServiceImpl implements AuthorService {
+public class AuthorServiceImpl extends AbstractBaseService<Author, Long, AuthorRepository> implements AuthorService {
 
     @Autowired
-    private AuthorRepository authorRepository;
+    public AuthorServiceImpl(AuthorRepository authorRepository) {
+        super(authorRepository);
+    }
 
     @Override
-    @Cacheable(value = "authors", key = "#searchName + '-' + #searchCountry + '-' + #isAlive + '-' + #page + '-' + #pageSize")
     public Paginate<Author> getAuthors(String searchName, String searchCountry, Boolean isAlive, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
-        Page<Author> authorPage = authorRepository.findAuthorsWithSearch(searchName, searchCountry, isAlive, pageable);
+        Page<Author> authorPage = repository.findAuthorsWithSearch(searchName, searchCountry, isAlive, pageable);
         
         // Convert to generic Paginate with Author entities
         return new Paginate<>(authorPage.getContent(), (int) authorPage.getTotalElements());
     }
 
     @Override
-    @Cacheable(value = "authorDetails", key = "#id")
-    public Optional<Author> getAuthorById(Long id) {
-        return authorRepository.findById(id);
-    }
-
-    @Override
-    @Cacheable(value = "authorDetailsByName", key = "#name")
     public Optional<Author> getAuthorByName(String name) {
-        return authorRepository.findByNameIgnoreCase(name);
+        return repository.findByNameIgnoreCase(name);
     }
 
     @Override
-    public Author createAuthor(Author author) {
-        // Check if author with same name already exists
-        Optional<Author> existingAuthor = authorRepository.findByNameIgnoreCase(author.getName());
-        if (existingAuthor.isPresent()) {
-            throw new RuntimeException("Author with name '" + author.getName() + "' already exists");
-        }
-        return authorRepository.save(author);
+    protected void validateBeforeCreate(Author author) {
+        ValidationUtil.validateNameDoesNotExist(
+            author.getName(),
+            repository.findByNameIgnoreCase(author.getName()),
+            "Author"
+        );
     }
 
     @Override
-    public Author updateAuthor(Long id, Author authorDetails) {
-        Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Author not found with id: " + id));
-        
-        author.setName(authorDetails.getName());
-        author.setBiography(authorDetails.getBiography());
-        author.setBirthDate(authorDetails.getBirthDate());
-        author.setCountry(authorDetails.getCountry());
-        
-        return authorRepository.save(author);
+    protected void validateBeforeDelete(Author author) {
+        ValidationUtil.validateEntityCanBeDeleted(
+            !author.getBooks().isEmpty(),
+            "Author",
+            "books"
+        );
     }
 
     @Override
-    public void deleteAuthor(Long id) {
-        Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Author not found with id: " + id));
-        
-        // Check if author has any books before deleting
-        if (!author.getBooks().isEmpty()) {
-            throw new RuntimeException("Cannot delete author with existing books. Remove books first.");
-        }
-        
-        authorRepository.delete(author);
+    protected void updateEntityFields(Author target, Author source) {
+        target.setName(source.getName());
+        target.setBiography(source.getBiography());
+        target.setBirthDate(source.getBirthDate());
+        target.setCountry(source.getCountry());
     }
 
     @Override
-    @Cacheable(value = "authorsByCountry", key = "#country")
+    protected Long getEntityId(Author entity) {
+        return entity.getId();
+    }
+
+    @Override
+    protected String getEntityTypeName() {
+        return "Author";
+    }
+
+    @Override
     public List<Author> getAuthorsByCountry(String country) {
-        return authorRepository.findByCountryIgnoreCase(country);
+        return repository.findByCountryIgnoreCase(country);
     }
 
     @Override
-    @Cacheable(value = "livingAuthors")
     public List<Author> getLivingAuthors() {
-        return authorRepository.findLivingAuthors();
+        return repository.findLivingAuthors();
     }
 
     @Override
-    @Cacheable(value = "authorsByBirthYearRange", key = "#startYear + '-' + #endYear")
     public List<Author> getAuthorsByBirthYearRange(int startYear, int endYear) {
-        return authorRepository.findByBirthYearRange(startYear, endYear);
+        return repository.findByBirthYearRange(startYear, endYear);
     }
 
     @Override
-    @Cacheable(value = "topAuthorsByBookCount", key = "#limit")
     public List<Author> getTopAuthorsByBookCount(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return authorRepository.findTopAuthorsByBookCount(pageable);
+        return repository.findTopAuthorsByBookCount(pageable);
     }
 
     @Override
-    @Cacheable(value = "authorsByBookGenre", key = "#genreName")
     public List<Author> getAuthorsByBookGenre(String genreName) {
-        return authorRepository.findByBookGenre(genreName);
+        return repository.findByBookGenre(genreName);
     }
 
     @Override
-    @Cacheable(value = "authorsByBookPublisher", key = "#publisherName")
     public List<Author> getAuthorsByBookPublisher(String publisherName) {
-        return authorRepository.findByBookPublisher(publisherName);
+        return repository.findByBookPublisher(publisherName);
     }
 
     @Override
     public List<BookDetailDto> getBooksByAuthor(Long authorId) {
-        Author author = authorRepository.findById(authorId)
-                .orElseThrow(() -> new RuntimeException("Author not found with id: " + authorId));
+        Author author = ValidationUtil.validateEntityExists(
+            repository.findById(authorId), authorId, "Author"
+        );
         
         return author.getBooks().stream()
                 .map(book -> BookDetailDto.builder()
@@ -186,6 +176,6 @@ public class AuthorServiceImpl implements AuthorService {
 
     @Override
     public long getTotalAuthorCount() {
-        return authorRepository.getTotalAuthorCount();
+        return repository.getTotalAuthorCount();
     }
 } 

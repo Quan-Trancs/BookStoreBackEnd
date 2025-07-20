@@ -5,13 +5,14 @@ import quantran.api.entity.Publisher;
 import quantran.api.page.Paginate;
 import quantran.api.repository.PublisherRepository;
 import quantran.api.service.PublisherService;
+import quantran.api.service.AbstractBaseService;
+import quantran.api.util.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,124 +20,111 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class PublisherServiceImpl implements PublisherService {
+public class PublisherServiceImpl extends AbstractBaseService<Publisher, Long, PublisherRepository> implements PublisherService {
 
     @Autowired
-    private PublisherRepository publisherRepository;
+    public PublisherServiceImpl(PublisherRepository publisherRepository) {
+        super(publisherRepository);
+    }
 
     @Override
-    @Cacheable(value = "publishers", key = "#searchName + '-' + #searchCountry + '-' + #searchCity + '-' + #isActive + '-' + #page + '-' + #pageSize")
     public Paginate<Publisher> getPublishers(String searchName, String searchCountry, String searchCity, Boolean isActive, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
-        Page<Publisher> publisherPage = publisherRepository.findPublishersWithSearch(searchName, searchCountry, searchCity, isActive, pageable);
+        Page<Publisher> publisherPage = repository.findPublishersWithSearch(searchName, searchCountry, searchCity, isActive, pageable);
         
         // Convert to generic Paginate with Publisher entities
         return new Paginate<>(publisherPage.getContent(), (int) publisherPage.getTotalElements());
     }
 
     @Override
-    @Cacheable(value = "publisherDetails", key = "#id")
-    public Optional<Publisher> getPublisherById(Long id) {
-        return publisherRepository.findById(id);
-    }
-
-    @Override
-    @Cacheable(value = "publisherDetailsByName", key = "#name")
     public Optional<Publisher> getPublisherByName(String name) {
-        return publisherRepository.findByNameIgnoreCase(name);
+        return repository.findByNameIgnoreCase(name);
     }
 
     @Override
-    public Publisher createPublisher(Publisher publisher) {
-        // Check if publisher with same name already exists
-        Optional<Publisher> existingPublisher = publisherRepository.findByNameIgnoreCase(publisher.getName());
-        if (existingPublisher.isPresent()) {
-            throw new RuntimeException("Publisher with name '" + publisher.getName() + "' already exists");
-        }
-        return publisherRepository.save(publisher);
+    protected void validateBeforeCreate(Publisher publisher) {
+        ValidationUtil.validateNameDoesNotExist(
+            publisher.getName(),
+            repository.findByNameIgnoreCase(publisher.getName()),
+            "Publisher"
+        );
     }
 
     @Override
-    public Publisher updatePublisher(Long id, Publisher publisherDetails) {
-        Publisher publisher = publisherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Publisher not found with id: " + id));
-        
-        publisher.setName(publisherDetails.getName());
-        publisher.setDescription(publisherDetails.getDescription());
-        publisher.setCountry(publisherDetails.getCountry());
-        publisher.setCity(publisherDetails.getCity());
-        publisher.setWebsite(publisherDetails.getWebsite());
-        publisher.setFoundedYear(publisherDetails.getFoundedYear());
-        
-        return publisherRepository.save(publisher);
+    protected void validateBeforeDelete(Publisher publisher) {
+        ValidationUtil.validateEntityCanBeDeleted(
+            !publisher.getBooks().isEmpty(),
+            "Publisher",
+            "books"
+        );
     }
 
     @Override
-    public void deletePublisher(Long id) {
-        Publisher publisher = publisherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Publisher not found with id: " + id));
-        
-        // Check if publisher has any books before deleting
-        if (!publisher.getBooks().isEmpty()) {
-            throw new RuntimeException("Cannot delete publisher with existing books. Remove books first.");
-        }
-        
-        publisherRepository.delete(publisher);
+    protected void updateEntityFields(Publisher target, Publisher source) {
+        target.setName(source.getName());
+        target.setDescription(source.getDescription());
+        target.setCountry(source.getCountry());
+        target.setCity(source.getCity());
+        target.setWebsite(source.getWebsite());
+        target.setFoundedYear(source.getFoundedYear());
     }
 
     @Override
-    @Cacheable(value = "publishersByCountry", key = "#country")
+    protected Long getEntityId(Publisher entity) {
+        return entity.getId();
+    }
+
+    @Override
+    protected String getEntityTypeName() {
+        return "Publisher";
+    }
+
+    @Override
     public List<Publisher> getPublishersByCountry(String country) {
-        return publisherRepository.findByCountryIgnoreCase(country);
+        return repository.findByCountryIgnoreCase(country);
     }
 
     @Override
-    @Cacheable(value = "publishersByCity", key = "#city")
     public List<Publisher> getPublishersByCity(String city) {
-        return publisherRepository.findByCityIgnoreCase(city);
+        return repository.findByCityIgnoreCase(city);
     }
 
     @Override
-    @Cacheable(value = "publishersByFoundedYear", key = "#foundedYear")
     public List<Publisher> getPublishersByFoundedYear(Integer foundedYear) {
-        return publisherRepository.findByFoundedYear(foundedYear);
+        return repository.findByFoundedYear(foundedYear);
     }
 
     @Override
-    @Cacheable(value = "publishersFoundedBefore", key = "#year")
     public List<Publisher> getPublishersFoundedBefore(Integer year) {
-        return publisherRepository.findByFoundedYearBefore(year);
+        return repository.findByFoundedYearBefore(year);
     }
 
     @Override
-    @Cacheable(value = "publishersFoundedAfter", key = "#year")
     public List<Publisher> getPublishersFoundedAfter(Integer year) {
-        return publisherRepository.findByFoundedYearAfter(year);
+        return repository.findByFoundedYearAfter(year);
     }
 
     @Override
-    @Cacheable(value = "topPublishersByBookCount", key = "#limit")
     public List<Publisher> getTopPublishersByBookCount(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return publisherRepository.findTopPublishersByBookCount(pageable);
+        return repository.findTopPublishersByBookCount(pageable);
     }
 
     @Override
-    @Cacheable(value = "publishersByBookGenre", key = "#genreName")
     public List<Publisher> getPublishersByBookGenre(String genreName) {
-        return publisherRepository.findByBookGenre(genreName);
+        return repository.findByBookGenre(genreName);
     }
 
     @Override
-    @Cacheable(value = "publishersByBookAuthor", key = "#authorName")
     public List<Publisher> getPublishersByBookAuthor(String authorName) {
-        return publisherRepository.findByBookAuthor(authorName);
+        return repository.findByBookAuthor(authorName);
     }
 
     @Override
     public List<BookDetailDto> getBooksByPublisher(Long publisherId) {
-        Publisher publisher = publisherRepository.findById(publisherId)
-                .orElseThrow(() -> new RuntimeException("Publisher not found with id: " + publisherId));
+        Publisher publisher = ValidationUtil.validateEntityExists(
+            repository.findById(publisherId), publisherId, "Publisher"
+        );
         
         return publisher.getBooks().stream()
                 .map(book -> BookDetailDto.builder()
@@ -199,6 +187,6 @@ public class PublisherServiceImpl implements PublisherService {
 
     @Override
     public long getTotalPublisherCount() {
-        return publisherRepository.getTotalPublisherCount();
+        return repository.getTotalPublisherCount();
     }
 } 

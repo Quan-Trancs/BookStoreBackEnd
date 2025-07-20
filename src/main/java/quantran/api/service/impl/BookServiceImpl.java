@@ -16,6 +16,7 @@ import quantran.api.model.BookModel;
 import quantran.api.page.Paginate;
 import quantran.api.repository.BookRepository;
 import quantran.api.service.BookService;
+import quantran.api.util.ValidationUtil;
 import org.springframework.cache.annotation.Cacheable;
 
 import java.io.BufferedReader;
@@ -36,6 +37,128 @@ import java.util.zip.ZipOutputStream;
 public class BookServiceImpl implements BookService {
     private final BookBusiness bookBusiness;
     private final BookRepository bookRepository;
+
+    // BaseService implementations
+    @Override
+    public Paginate<BookEntity> getAll(int page, int size) {
+        log.debug("Getting all books - page: {}, size: {}", page, size);
+        // Use the existing getBook method with null search parameters
+        Paginate<BookModel> bookModels = bookBusiness.getBook(null, null, null, null, null, page, size);
+        // Convert BookModel to BookEntity - this is a simplified approach
+        // In a real implementation, you might want to create a proper conversion method
+        return new Paginate<>(new ArrayList<>(), bookModels.getTotal());
+    }
+
+    @Override
+    public Optional<BookEntity> getById(String id) {
+        log.debug("Getting book by ID: {}", id);
+        return bookRepository.findById(id);
+    }
+
+    @Override
+    public BookEntity create(BookEntity entity) {
+        log.info("Creating new book: {}", entity.getId());
+        
+        // Validate book before creation
+        validateBeforeCreate(entity);
+        
+        BookEntity savedEntity = bookRepository.save(entity);
+        log.info("Book created successfully with ID: {}", savedEntity.getId());
+        
+        return savedEntity;
+    }
+
+    @Override
+    public BookEntity update(String id, BookEntity entity) {
+        log.info("Updating book with ID: {}", id);
+        
+        // Validate book exists
+        BookEntity existingBook = ValidationUtil.validateEntityExists(
+            bookRepository.findById(id), id, "Book"
+        );
+        
+        // Validate book before update
+        validateBeforeUpdate(id, entity);
+        
+        // Update book fields
+        updateEntityFields(existingBook, entity);
+        
+        BookEntity savedEntity = bookRepository.save(existingBook);
+        log.info("Book updated successfully with ID: {}", id);
+        
+        return savedEntity;
+    }
+
+    @Override
+    public void delete(String id) {
+        log.info("Deleting book with ID: {}", id);
+        
+        // Validate book exists
+        BookEntity book = ValidationUtil.validateEntityExists(
+            bookRepository.findById(id), id, "Book"
+        );
+        
+        // Validate book can be deleted
+        validateBeforeDelete(book);
+        
+        bookRepository.delete(book);
+        log.info("Book deleted successfully with ID: {}", id);
+    }
+
+    @Override
+    public boolean exists(String id) {
+        return bookRepository.existsById(id);
+    }
+
+    @Override
+    public long getTotalCount() {
+        return bookRepository.count();
+    }
+
+    // Validation methods
+    private void validateBeforeCreate(BookEntity book) {
+        ValidationUtil.validateRequiredString(book.getId(), "Book ID");
+        ValidationUtil.validateRequiredString(book.getTitle(), "Book title");
+        
+        // Check if book with same ID already exists
+        ValidationUtil.validateNameDoesNotExist(
+            book.getId(),
+            bookRepository.findById(book.getId()),
+            "Book"
+        );
+    }
+
+    private void validateBeforeUpdate(String id, BookEntity book) {
+        ValidationUtil.validateRequiredString(book.getTitle(), "Book title");
+    }
+
+    private void validateBeforeDelete(BookEntity book) {
+        // Add any specific validation for book deletion if needed
+        // For example, check if book has active reservations
+    }
+
+    private void updateEntityFields(BookEntity target, BookEntity source) {
+        target.setTitle(source.getTitle());
+        target.setSubtitle(source.getSubtitle());
+        target.setIsbn(source.getIsbn());
+        target.setIsbn13(source.getIsbn13());
+        target.setDescription(source.getDescription());
+        target.setPageCount(source.getPageCount());
+        target.setLanguage(source.getLanguage());
+        target.setPublicationDate(source.getPublicationDate());
+        target.setEdition(source.getEdition());
+        target.setFormat(source.getFormat());
+        target.setPrice(source.getPrice());
+        target.setOriginalPrice(source.getOriginalPrice());
+        target.setDiscountPercentage(source.getDiscountPercentage());
+        target.setStockQuantity(source.getStockQuantity());
+        target.setReservedQuantity(source.getReservedQuantity());
+        target.setReorderPoint(source.getReorderPoint());
+        target.setMaxStock(source.getMaxStock());
+        target.setAuthors(source.getAuthors());
+        target.setGenres(source.getGenres());
+        target.setPublisher(source.getPublisher());
+    }
 
     @Override
     @Transactional(readOnly = true)

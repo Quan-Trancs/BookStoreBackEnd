@@ -2,6 +2,7 @@ package quantran.api.service;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
+import quantran.api.entity.BookEntity;
 import quantran.api.entity.BookType;
 import quantran.api.model.BookModel;
 import quantran.api.page.Paginate;
@@ -11,7 +12,18 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-public interface BookService {
+public interface BookService extends BaseService<BookEntity, String> {
+    
+    // Basic CRUD operations inherited from BaseService
+    // - getAll(int page, int size)
+    // - getById(String id)
+    // - create(BookEntity entity)
+    // - update(String id, BookEntity entity)
+    // - delete(String id)
+    // - exists(String id)
+    // - getTotalCount()
+    
+    // Specialized book operations
     Paginate<BookModel> getBook(String searchTitle, String searchAuthor, String searchId, String searchGenre, String searchPublisher, int page, int pageSize);
 
     List<BookType> getBookType();
@@ -22,7 +34,7 @@ public interface BookService {
     void uploadBook(MultipartFile bookFile) throws IOException;
     ResponseEntity<byte[]> downloadBook() throws IOException;
     
-    // New methods for enhanced book management
+    // Enhanced book management methods
     Optional<BookDetailDto> getBookById(String id);
     Optional<BookDetailDto> getBookByIsbn(String isbn);
     List<BookDetailDto> getBooksByAuthor(Long authorId);
