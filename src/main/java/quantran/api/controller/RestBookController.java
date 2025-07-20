@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import quantran.api.entity.BookType;
+import quantran.api.entity.BookTypeEntity;
 import quantran.api.dto.AsyncTaskRequest;
 import quantran.api.dto.AsyncTaskResponseDto;
 import quantran.api.dto.BookRequestDto;
@@ -133,7 +133,7 @@ public class RestBookController {
         
         // Validate user authentication
         UserModel userModel = new UserModel(userName, userKey);
-        String[] status = asyncProcessingWorkAcceptor.workAcceptor(userModel);
+        String[] status = asyncProcessingWorkAcceptor.acceptWork(userModel);
         if ("404".equals(status[0])) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -177,10 +177,10 @@ public class RestBookController {
      * GET /api/v1/books/types - Get all book types
      */
     @GetMapping("/types")
-    public ResponseEntity<List<BookType>> getBookTypes() {
+    public ResponseEntity<List<BookTypeEntity>> getBookTypes() {
         log.info("Getting book types");
         
-        List<BookType> bookTypes = bookService.getBookType();
+        List<BookTypeEntity> bookTypes = bookService.getBookType();
         return ResponseEntity.ok(bookTypes);
     }
     

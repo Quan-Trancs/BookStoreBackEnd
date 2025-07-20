@@ -9,9 +9,6 @@ import quantran.api.common.UrlConstant;
 import quantran.api.model.UserModel;
 import quantran.api.service.UserService;
 
-import java.util.List;
-
-
 @RestController
 @Log4j2
 @RequiredArgsConstructor
@@ -23,10 +20,10 @@ public class UserController {
     @PostMapping(UrlConstant.LOGIN)
     @CrossOrigin(origins = UrlConstant.BOOKFE)
     public ResponseEntity<String> login(@RequestParam String userName, @RequestParam String password, @RequestParam String role) {
-        log.info("Start login()");
+        log.info("Start login() for user: {}", userName);
         UserModel userModel = new UserModel(userName, password, role);
         String key = userService.login(userModel);
-        log.info("End login()");
-        return ResponseEntity.ok(key);
+        log.info("End login() for user: {}, result: {}", userName, key != null ? "success" : "failed");
+        return ResponseEntity.ok(key != null ? key : "Login failed");
     }
 }

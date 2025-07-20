@@ -16,6 +16,7 @@ public class UrlConstant {
     public static final String SEARCH = "search";
     public static final String HEALTH = "health";
     public static final String STATUS = "status";
+    public static final String TASK = "task";
     
     // Legacy constants (deprecated - for backward compatibility)
     /**

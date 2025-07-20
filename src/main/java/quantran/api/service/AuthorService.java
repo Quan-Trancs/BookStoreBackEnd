@@ -1,61 +1,163 @@
 package quantran.api.service;
 
-import quantran.api.dto.BookDetailDto;
-import quantran.api.entity.Author;
+import quantran.api.entity.AuthorEntity;
 import quantran.api.page.Paginate;
+import quantran.api.dto.AuthorRequestDto;
+import quantran.api.dto.AuthorResponseDto;
+import quantran.api.dto.BookResponseDto;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-public interface AuthorService extends BaseService<Author, Long> {
+/**
+ * Standardized AuthorService interface with consistent naming conventions.
+ * This interface provides standardized CRUD operations and query methods.
+ */
+public interface AuthorService extends BaseService<AuthorEntity, Long> {
+    
+    // Standardized CRUD operations
+    /**
+     * Create a new author using the standardized request DTO.
+     * @param request The author creation request
+     * @return The created author response
+     */
+    AuthorResponseDto createAuthor(AuthorRequestDto request);
     
     /**
-     * Get all authors with pagination and search
+     * Find an author by its ID and return the standardized response DTO.
+     * @param id The author ID
+     * @return Optional containing the author response if found
      */
-    Paginate<Author> getAuthors(String searchName, String searchCountry, Boolean isAlive, int page, int pageSize);
+    Optional<AuthorResponseDto> findAuthorById(Long id);
     
     /**
-     * Get author by name
+     * Update an existing author using the standardized request DTO.
+     * @param id The author ID
+     * @param request The author update request
+     * @return The updated author response
      */
-    Optional<Author> getAuthorByName(String name);
+    AuthorResponseDto updateAuthor(Long id, AuthorRequestDto request);
     
     /**
-     * Get authors by country
+     * Delete an author by its ID.
+     * @param id The author ID
      */
-    List<Author> getAuthorsByCountry(String country);
+    void deleteAuthor(Long id);
+    
+    // Standardized query methods
+    /**
+     * Find authors with standardized search parameters.
+     * @param name Author name filter
+     * @param country Country filter
+     * @param isAlive Alive status filter
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @return Paginated list of author responses
+     */
+    Paginate<AuthorResponseDto> findAuthors(String name, String country, Boolean isAlive, int page, int size);
     
     /**
-     * Get living authors
+     * Find an author by name.
+     * @param name The author name
+     * @return Optional containing the author response if found
      */
-    List<Author> getLivingAuthors();
+    Optional<AuthorResponseDto> findAuthorByName(String name);
     
     /**
-     * Get authors by birth year range
+     * Find authors by country.
+     * @param country The country
+     * @return List of author responses
      */
-    List<Author> getAuthorsByBirthYearRange(int startYear, int endYear);
+    List<AuthorResponseDto> findAuthorsByCountry(String country);
     
     /**
-     * Get authors with most books
+     * Find authors by birth year range.
+     * @param startYear Start year
+     * @param endYear End year
+     * @return List of author responses
      */
-    List<Author> getTopAuthorsByBookCount(int limit);
+    List<AuthorResponseDto> findAuthorsByBirthYearRange(int startYear, int endYear);
     
     /**
-     * Get authors by book genre
+     * Find authors by book genre.
+     * @param genreName The genre name
+     * @return List of author responses
      */
-    List<Author> getAuthorsByBookGenre(String genreName);
+    List<AuthorResponseDto> findAuthorsByBookGenre(String genreName);
     
     /**
-     * Get authors by book publisher
+     * Find authors by book publisher.
+     * @param publisherName The publisher name
+     * @return List of author responses
      */
-    List<Author> getAuthorsByBookPublisher(String publisherName);
+    List<AuthorResponseDto> findAuthorsByBookPublisher(String publisherName);
     
     /**
-     * Get books by author
+     * Find books by author ID.
+     * @param authorId The author ID
+     * @return List of book responses
      */
-    List<BookDetailDto> getBooksByAuthor(Long authorId);
+    List<BookResponseDto> findBooksByAuthor(Long authorId);
+    
+    // Legacy methods (deprecated for backward compatibility)
+    /**
+     * @deprecated Use {@link #createAuthor(AuthorRequestDto)} instead.
+     */
+    @Deprecated
+    AuthorEntity createAuthor(AuthorEntity author);
     
     /**
-     * Get total author count
+     * @deprecated Use {@link #updateAuthor(Long, AuthorRequestDto)} instead.
      */
-    long getTotalAuthorCount();
+    @Deprecated
+    AuthorEntity updateAuthor(Long id, AuthorEntity author);
+    
+    /**
+     * @deprecated Use {@link #deleteAuthor(Long)} instead.
+     */
+    @Deprecated
+    void deleteAuthorLegacy(Long id);
+    
+    /**
+     * @deprecated Use {@link #findAuthors(String, String, Boolean, int, int)} instead.
+     */
+    @Deprecated
+    Paginate<AuthorEntity> getAuthors(String searchName, String searchCountry, Boolean isAlive, int page, int pageSize);
+    
+    /**
+     * @deprecated Use {@link #findAuthorByName(String)} instead.
+     */
+    @Deprecated
+    Optional<AuthorEntity> getAuthorByName(String name);
+    
+    /**
+     * @deprecated Use {@link #findAuthorsByCountry(String)} instead.
+     */
+    @Deprecated
+    List<AuthorEntity> getAuthorsByCountry(String country);
+    
+    /**
+     * @deprecated Use {@link #findAuthorsByBirthYearRange(int, int)} instead.
+     */
+    @Deprecated
+    List<AuthorEntity> getAuthorsByBirthYearRange(int startYear, int endYear);
+    
+    /**
+     * @deprecated Use {@link #findAuthorsByBookGenre(String)} instead.
+     */
+    @Deprecated
+    List<AuthorEntity> getAuthorsByBookGenre(String genreName);
+    
+    /**
+     * @deprecated Use {@link #findAuthorsByBookPublisher(String)} instead.
+     */
+    @Deprecated
+    List<AuthorEntity> getAuthorsByBookPublisher(String publisherName);
+    
+    /**
+     * @deprecated Use {@link #findBooksByAuthor(Long)} instead.
+     */
+    @Deprecated
+    List<BookResponseDto> getBooksByAuthor(Long authorId);
 } 

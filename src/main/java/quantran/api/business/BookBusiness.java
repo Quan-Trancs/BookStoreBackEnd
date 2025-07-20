@@ -3,13 +3,13 @@ package quantran.api.business;
 import quantran.api.entity.BookEntity;
 import quantran.api.model.BookModel;
 import quantran.api.page.Paginate;
-import quantran.api.entity.BookType;
+import quantran.api.entity.BookTypeEntity;
 
 import java.util.List;
 
 public interface BookBusiness {
 
-    default List<BookType> getBookType() { return null; };
+    default List<BookTypeEntity> getBookType() { return null; };
 
     default Paginate<BookModel> getBook(String searchId, String searchName, String searchAuthor, String searchGenre, String searchPublisher, int page, int pageSize) {
         return null;

@@ -13,11 +13,10 @@ public class UserModel {
     @NotNull (message = "Password is required!")
     @Pattern(regexp = "^(?=.*[a-z])(?=.*\\d)[a-zA-Z0-9]{5,20}$", message = "Invalid Password")
     private String password;
-    @NotNull(message = "user's role is required")
-    @NotEmpty(message = "user's role is required")
+    @NotNull(message = "User role is required")
+    @NotEmpty(message = "User role is required")
     private String userRole;
 
-    @NotNull(message = "user's key is required")
     private String key;
     public UserModel() {}
     public UserModel(UserEntity userEntity) {
@@ -63,9 +62,9 @@ public class UserModel {
             return 1;
         }
         if ("seller".equals(userRole)) {
-            return 1;
+            return 2;
         }
-        return 3;
+        return 3; // admin
     }
     public void setUserRole(String userRole) {
         this.userRole = userRole;

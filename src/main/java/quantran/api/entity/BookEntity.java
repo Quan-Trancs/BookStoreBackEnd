@@ -98,7 +98,7 @@ public class BookEntity {
         joinColumns = @JoinColumn(name = "book_id"),
         inverseJoinColumns = @JoinColumn(name = "author_id")
     )
-    private Set<Author> authors = new HashSet<>();
+    private Set<AuthorEntity> authors = new HashSet<>();
     
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
@@ -106,11 +106,11 @@ public class BookEntity {
         joinColumns = @JoinColumn(name = "book_id"),
         inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
-    private Set<BookType> genres = new HashSet<>();
+    private Set<BookTypeEntity> genres = new HashSet<>();
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "publisher_id")
-    private Publisher publisher;
+    private PublisherEntity publisher;
     
     // Audit fields
     @Column(name = "created_at", nullable = false)
@@ -138,7 +138,7 @@ public class BookEntity {
     public BookEntity(String id, String title, String subtitle, String isbn, 
                      String description, Integer pageCount, String language, 
                      LocalDate publicationDate, String edition, String format, 
-                     BigDecimal price, Publisher publisher) {
+                     BigDecimal price, PublisherEntity publisher) {
         this();
         this.id = id;
         this.title = title;
@@ -288,27 +288,27 @@ public class BookEntity {
         this.discountPercentage = discountPercentage;
     }
 
-    public Set<Author> getAuthors() {
+    public Set<AuthorEntity> getAuthors() {
         return authors;
     }
 
-    public void setAuthors(Set<Author> authors) {
+    public void setAuthors(Set<AuthorEntity> authors) {
         this.authors = authors;
     }
 
-    public Set<BookType> getGenres() {
+    public Set<BookTypeEntity> getGenres() {
         return genres;
     }
 
-    public void setGenres(Set<BookType> genres) {
+    public void setGenres(Set<BookTypeEntity> genres) {
         this.genres = genres;
     }
 
-    public Publisher getPublisher() {
+    public PublisherEntity getPublisher() {
         return publisher;
     }
 
-    public void setPublisher(Publisher publisher) {
+    public void setPublisher(PublisherEntity publisher) {
         this.publisher = publisher;
     }
     
@@ -399,7 +399,7 @@ public class BookEntity {
             return "Unknown Author";
         }
         return authors.stream()
-                .map(Author::getName)
+                .map(AuthorEntity::getName)
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("Unknown Author");
     }
@@ -409,7 +409,7 @@ public class BookEntity {
             return "Uncategorized";
         }
         return genres.stream()
-                .map(BookType::getName)
+                .map(BookTypeEntity::getName)
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("Uncategorized");
     }

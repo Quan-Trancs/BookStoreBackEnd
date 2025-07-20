@@ -1,7 +1,10 @@
 package quantran.api.service.impl;
 
 import quantran.api.dto.BookDetailDto;
-import quantran.api.entity.Publisher;
+import quantran.api.dto.BookResponseDto;
+import quantran.api.dto.PublisherRequestDto;
+import quantran.api.dto.PublisherResponseDto;
+import quantran.api.entity.PublisherEntity;
 import quantran.api.page.Paginate;
 import quantran.api.repository.PublisherRepository;
 import quantran.api.service.PublisherService;
@@ -20,29 +23,17 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class PublisherServiceImpl extends AbstractBaseService<Publisher, Long, PublisherRepository> implements PublisherService {
+public class PublisherServiceImpl extends AbstractBaseService<PublisherEntity, Long, PublisherRepository> implements PublisherService {
 
     @Autowired
     public PublisherServiceImpl(PublisherRepository publisherRepository) {
         super(publisherRepository);
     }
 
-    @Override
-    public Paginate<Publisher> getPublishers(String searchName, String searchCountry, String searchCity, Boolean isActive, int page, int pageSize) {
-        Pageable pageable = PageRequest.of(page, pageSize);
-        Page<Publisher> publisherPage = repository.findPublishersWithSearch(searchName, searchCountry, searchCity, isActive, pageable);
-        
-        // Convert to generic Paginate with Publisher entities
-        return new Paginate<>(publisherPage.getContent(), (int) publisherPage.getTotalElements());
-    }
+
 
     @Override
-    public Optional<Publisher> getPublisherByName(String name) {
-        return repository.findByNameIgnoreCase(name);
-    }
-
-    @Override
-    protected void validateBeforeCreate(Publisher publisher) {
+    protected void validateBeforeCreate(PublisherEntity publisher) {
         ValidationUtil.validateNameDoesNotExist(
             publisher.getName(),
             repository.findByNameIgnoreCase(publisher.getName()),
@@ -51,7 +42,7 @@ public class PublisherServiceImpl extends AbstractBaseService<Publisher, Long, P
     }
 
     @Override
-    protected void validateBeforeDelete(Publisher publisher) {
+    protected void validateBeforeDelete(PublisherEntity publisher) {
         ValidationUtil.validateEntityCanBeDeleted(
             !publisher.getBooks().isEmpty(),
             "Publisher",
@@ -60,7 +51,7 @@ public class PublisherServiceImpl extends AbstractBaseService<Publisher, Long, P
     }
 
     @Override
-    protected void updateEntityFields(Publisher target, Publisher source) {
+    protected void updateEntityFields(PublisherEntity target, PublisherEntity source) {
         target.setName(source.getName());
         target.setDescription(source.getDescription());
         target.setCountry(source.getCountry());
@@ -70,7 +61,7 @@ public class PublisherServiceImpl extends AbstractBaseService<Publisher, Long, P
     }
 
     @Override
-    protected Long getEntityId(Publisher entity) {
+    protected Long getEntityId(PublisherEntity entity) {
         return entity.getId();
     }
 
@@ -79,114 +70,247 @@ public class PublisherServiceImpl extends AbstractBaseService<Publisher, Long, P
         return "Publisher";
     }
 
+    // Standardized methods
     @Override
-    public List<Publisher> getPublishersByCountry(String country) {
-        return repository.findByCountryIgnoreCase(country);
+    public PublisherResponseDto createPublisher(PublisherRequestDto request) {
+        PublisherEntity publisher = new PublisherEntity();
+        publisher.setName(request.getName());
+        publisher.setDescription(request.getDescription());
+        publisher.setCountry(request.getCountry());
+        publisher.setCity(request.getCity());
+        publisher.setWebsite(request.getWebsite());
+        publisher.setFoundedYear(request.getFoundedYear());
+        
+        PublisherEntity savedPublisher = create(publisher);
+        return convertToResponseDto(savedPublisher);
     }
 
     @Override
-    public List<Publisher> getPublishersByCity(String city) {
-        return repository.findByCityIgnoreCase(city);
+    public Optional<PublisherResponseDto> findPublisherById(Long id) {
+        return getById(id).map(this::convertToResponseDto);
     }
 
     @Override
-    public List<Publisher> getPublishersByFoundedYear(Integer foundedYear) {
-        return repository.findByFoundedYear(foundedYear);
+    public PublisherResponseDto updatePublisher(Long id, PublisherRequestDto request) {
+        PublisherEntity publisher = ValidationUtil.validateEntityExists(
+            repository.findById(id), id, "Publisher"
+        );
+        
+        publisher.setName(request.getName());
+        publisher.setDescription(request.getDescription());
+        publisher.setCountry(request.getCountry());
+        publisher.setCity(request.getCity());
+        publisher.setWebsite(request.getWebsite());
+        publisher.setFoundedYear(request.getFoundedYear());
+        
+        PublisherEntity updatedPublisher = update(id, publisher);
+        return convertToResponseDto(updatedPublisher);
     }
 
     @Override
-    public List<Publisher> getPublishersFoundedBefore(Integer year) {
-        return repository.findByFoundedYearBefore(year);
+    public void deletePublisher(Long id) {
+        delete(id);
     }
 
     @Override
-    public List<Publisher> getPublishersFoundedAfter(Integer year) {
-        return repository.findByFoundedYearAfter(year);
+    public Paginate<PublisherResponseDto> findPublishers(String name, String country, String city, Boolean isActive, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PublisherEntity> publisherPage = repository.findPublishersWithSearch(name, country, city, isActive, pageable);
+        
+        List<PublisherResponseDto> responseDtos = publisherPage.getContent().stream()
+            .map(this::convertToResponseDto)
+            .collect(Collectors.toList());
+        
+        return new Paginate<>(responseDtos, (int) publisherPage.getTotalElements());
     }
 
     @Override
-    public List<Publisher> getTopPublishersByBookCount(int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
-        return repository.findTopPublishersByBookCount(pageable);
+    public Optional<PublisherResponseDto> findPublisherByName(String name) {
+        return repository.findByNameIgnoreCase(name).map(this::convertToResponseDto);
     }
 
     @Override
-    public List<Publisher> getPublishersByBookGenre(String genreName) {
-        return repository.findByBookGenre(genreName);
+    public List<PublisherResponseDto> findPublishersByCountry(String country) {
+        return repository.findByCountryIgnoreCase(country).stream()
+            .map(this::convertToResponseDto)
+            .collect(Collectors.toList());
     }
 
     @Override
-    public List<Publisher> getPublishersByBookAuthor(String authorName) {
-        return repository.findByBookAuthor(authorName);
+    public List<PublisherResponseDto> findPublishersByCity(String city) {
+        return repository.findByCityIgnoreCase(city).stream()
+            .map(this::convertToResponseDto)
+            .collect(Collectors.toList());
     }
 
     @Override
-    public List<BookDetailDto> getBooksByPublisher(Long publisherId) {
-        Publisher publisher = ValidationUtil.validateEntityExists(
+    public List<PublisherResponseDto> findPublishersByFoundedYear(Integer foundedYear) {
+        return repository.findByFoundedYear(foundedYear).stream()
+            .map(this::convertToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PublisherResponseDto> findPublishersFoundedBefore(Integer year) {
+        return repository.findByFoundedYearBefore(year).stream()
+            .map(this::convertToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PublisherResponseDto> findPublishersFoundedAfter(Integer year) {
+        return repository.findByFoundedYearAfter(year).stream()
+            .map(this::convertToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PublisherResponseDto> findPublishersByBookGenre(String genreName) {
+        return repository.findByBookGenre(genreName).stream()
+            .map(this::convertToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PublisherResponseDto> findPublishersByBookAuthor(String authorName) {
+        return repository.findByBookAuthor(authorName).stream()
+            .map(this::convertToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksByPublisher(Long publisherId) {
+        PublisherEntity publisher = ValidationUtil.validateEntityExists(
             repository.findById(publisherId), publisherId, "Publisher"
         );
         
         return publisher.getBooks().stream()
-                .map(book -> BookDetailDto.builder()
-                    .id(book.getId())
-                    .title(book.getTitle())
-                    .subtitle(book.getSubtitle())
-                    .isbn(book.getIsbn())
-                    .isbn13(book.getIsbn13())
-                    .description(book.getDescription())
-                    .pageCount(book.getPageCount())
-                    .language(book.getLanguage())
-                    .publicationDate(book.getPublicationDate())
-                    .edition(book.getEdition())
-                    .format(book.getFormat())
-                    .price(book.getPrice())
-                    .originalPrice(book.getOriginalPrice())
-                    .discountedPrice(book.getDiscountedPrice())
-                    .discountPercentage(book.getDiscountPercentage())
-                    .stockQuantity(book.getStockQuantity())
-                    .availableQuantity(book.getAvailableQuantity())
-                    .reservedQuantity(book.getReservedQuantity())
-                    .reorderPoint(book.getReorderPoint())
-                    .maxStock(book.getMaxStock())
-                    .isLowStock(book.isLowStock())
-                    .isOutOfStock(book.isOutOfStock())
-                    .authors(book.getAuthors().stream()
-                        .map(authorEntity -> BookDetailDto.AuthorDto.builder()
-                            .id(authorEntity.getId())
-                            .name(authorEntity.getName())
-                            .biography(authorEntity.getBiography())
-                            .country(authorEntity.getCountry())
-                            .website(authorEntity.getWebsite())
-                            .bookCount(authorEntity.getBookCount())
-                            .build())
-                        .collect(Collectors.toList()))
-                    .genres(book.getGenres().stream()
-                        .map(genreEntity -> BookDetailDto.GenreDto.builder()
-                            .id(genreEntity.getId())
-                            .name(genreEntity.getName())
-                            .description(genreEntity.getDescription())
-                            .ageRating(genreEntity.getAgeRating())
-                            .bookCount(0) // BookType doesn't have getBookCount method
-                            .build())
-                        .collect(Collectors.toList()))
-                    .publisher(BookDetailDto.PublisherDto.builder()
-                        .id(publisher.getId())
-                        .name(publisher.getName())
-                        .description(publisher.getDescription())
-                        .country(publisher.getCountry())
-                        .city(publisher.getCity())
-                        .website(publisher.getWebsite())
-                        .foundedYear(publisher.getFoundedYear())
-                        .bookCount(publisher.getBookCount())
-                        .build())
-                    .createdAt(book.getCreatedAt())
-                    .updatedAt(book.getUpdatedAt())
-                    .build())
-                .collect(Collectors.toList());
+            .map(this::convertBookToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    // Legacy methods (deprecated for backward compatibility)
+    @Override
+    @Deprecated
+    public PublisherEntity createPublisher(PublisherEntity publisher) {
+        return create(publisher);
     }
 
     @Override
-    public long getTotalPublisherCount() {
-        return repository.getTotalPublisherCount();
+    @Deprecated
+    public PublisherEntity updatePublisher(Long id, PublisherEntity publisher) {
+        return update(id, publisher);
+    }
+
+    @Override
+    @Deprecated
+    public void deletePublisherLegacy(Long id) {
+        delete(id);
+    }
+
+    @Override
+    @Deprecated
+    public Paginate<PublisherEntity> getPublishers(String searchName, String searchCountry, String searchCity, Boolean isActive, int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page, pageSize);
+        Page<PublisherEntity> publisherPage = repository.findPublishersWithSearch(searchName, searchCountry, searchCity, isActive, pageable);
+        return new Paginate<>(publisherPage.getContent(), (int) publisherPage.getTotalElements());
+    }
+
+    @Override
+    @Deprecated
+    public Optional<PublisherEntity> getPublisherByName(String name) {
+        return repository.findByNameIgnoreCase(name);
+    }
+
+    @Override
+    @Deprecated
+    public List<PublisherEntity> getPublishersByCountry(String country) {
+        return repository.findByCountryIgnoreCase(country);
+    }
+
+    @Override
+    @Deprecated
+    public List<PublisherEntity> getPublishersByCity(String city) {
+        return repository.findByCityIgnoreCase(city);
+    }
+
+    @Override
+    @Deprecated
+    public List<PublisherEntity> getPublishersByFoundedYear(Integer foundedYear) {
+        return repository.findByFoundedYear(foundedYear);
+    }
+
+    @Override
+    @Deprecated
+    public List<PublisherEntity> getPublishersFoundedBefore(Integer year) {
+        return repository.findByFoundedYearBefore(year);
+    }
+
+    @Override
+    @Deprecated
+    public List<PublisherEntity> getPublishersFoundedAfter(Integer year) {
+        return repository.findByFoundedYearAfter(year);
+    }
+
+    @Override
+    @Deprecated
+    public List<PublisherEntity> getPublishersByBookGenre(String genreName) {
+        return repository.findByBookGenre(genreName);
+    }
+
+    @Override
+    @Deprecated
+    public List<PublisherEntity> getPublishersByBookAuthor(String authorName) {
+        return repository.findByBookAuthor(authorName);
+    }
+
+    @Override
+    @Deprecated
+    public List<BookResponseDto> getBooksByPublisher(Long publisherId) {
+        return findBooksByPublisher(publisherId);
+    }
+
+    // Helper methods for DTO conversion
+    private PublisherResponseDto convertToResponseDto(PublisherEntity publisher) {
+        return PublisherResponseDto.builder()
+            .id(publisher.getId())
+            .name(publisher.getName())
+            .description(publisher.getDescription())
+            .country(publisher.getCountry())
+            .city(publisher.getCity())
+            .website(publisher.getWebsite())
+            .foundedYear(publisher.getFoundedYear())
+            .bookCount(publisher.getBookCount())
+            .isActive(publisher.getFoundedYear() != null && publisher.getFoundedYear() > 1900)
+            .build();
+    }
+
+    private BookResponseDto convertBookToResponseDto(quantran.api.entity.BookEntity book) {
+        return BookResponseDto.builder()
+            .id(book.getId())
+            .title(book.getTitle())
+            .subtitle(book.getSubtitle())
+            .isbn(book.getIsbn())
+            .isbn13(book.getIsbn13())
+            .description(book.getDescription())
+            .pageCount(book.getPageCount())
+            .language(book.getLanguage())
+            .publicationDate(book.getPublicationDate())
+            .edition(book.getEdition())
+            .format(book.getFormat())
+            .price(book.getPrice())
+            .originalPrice(book.getOriginalPrice())
+            .discountedPrice(book.getDiscountedPrice())
+            .discountPercentage(book.getDiscountPercentage())
+            .stockQuantity(book.getStockQuantity())
+            .availableQuantity(book.getAvailableQuantity())
+            .reservedQuantity(book.getReservedQuantity())
+            .reorderPoint(book.getReorderPoint())
+            .maxStock(book.getMaxStock())
+            .isLowStock(book.isLowStock())
+            .isOutOfStock(book.isOutOfStock())
+            .createdAt(book.getCreatedAt())
+            .updatedAt(book.getUpdatedAt())
+            .build();
     }
 } 

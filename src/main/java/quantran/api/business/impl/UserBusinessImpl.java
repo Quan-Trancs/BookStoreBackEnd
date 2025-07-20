@@ -2,17 +2,11 @@ package quantran.api.business.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import quantran.api.business.UserBusiness;
-import quantran.api.entity.BookEntity;
 import quantran.api.entity.UserEntity;
 import quantran.api.repository.UserRepository;
-import quantran.api.service.UserService;
 import quantran.api.util.PasswordUtil;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @Log4j2
@@ -47,11 +41,11 @@ public class UserBusinessImpl implements UserBusiness {
                 }
             } else {
                 log.warn("Invalid password for user: {}", userName);
-                return "false";
+                return null;
             }
         } else {
             log.warn("User not found: {}", userName);
-            return "false";
+            return null;
         }
     }
 }

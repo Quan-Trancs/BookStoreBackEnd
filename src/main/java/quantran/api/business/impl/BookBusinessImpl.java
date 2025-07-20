@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import quantran.api.repository.BookRepository;
 import quantran.api.repository.BookTypeRepository;
-import quantran.api.entity.BookType;
+import quantran.api.entity.BookTypeEntity;
 import quantran.api.business.BookBusiness;
 import quantran.api.entity.BookEntity;
 import quantran.api.model.BookModel;
@@ -29,9 +29,9 @@ public class BookBusinessImpl implements BookBusiness {
     private final BookTypeRepository bookTypeRepository;
     
     @Override
-    public List<BookType> getBookType() {
+    public List<BookTypeEntity> getBookType() {
         log.info("Start getBookType()");
-        List<BookType> bookTypes = bookTypeRepository.findAll();
+        List<BookTypeEntity> bookTypes = bookTypeRepository.findAll();
         log.info("End getBookType(), found {} types", bookTypes.size());
         return bookTypes;
     }

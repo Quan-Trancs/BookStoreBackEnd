@@ -16,20 +16,20 @@ public class AsyncProcessingWorkAcceptorImpl implements AsyncProcessingWorkAccep
     private final UserRepository userRepository;
     
     @Override
-    public String[] workAcceptor(UserModel userModel) {
+    public String[] acceptWork(UserModel userModel) {
         String[] requestStatus = new String[2];
         String userName = userModel.getUserName();
         
         if (userName == null || userName.trim().isEmpty()) {
-            requestStatus[0] = "404";
-            requestStatus[1] = "Unauthorized: Username is required";
+            requestStatus[0] = "400";
+            requestStatus[1] = "Bad Request: Username is required";
             return requestStatus;
         }
 
         String key = userModel.getKey();
         if (key == null || key.trim().isEmpty()) {
-            requestStatus[0] = "404";
-            requestStatus[1] = "Unauthorized: User key is required";
+            requestStatus[0] = "400";
+            requestStatus[1] = "Bad Request: User key is required";
             return requestStatus;
         }
 
@@ -38,13 +38,13 @@ public class AsyncProcessingWorkAcceptorImpl implements AsyncProcessingWorkAccep
             UserEntity userEntity = userRepository.findByUserName(userName);
             if (userEntity == null) {
                 requestStatus[0] = "404";
-                requestStatus[1] = "Unauthorized: User not found";
+                requestStatus[1] = "Not Found: User not found";
                 return requestStatus;
             }
             
             // Verify the user key matches (in a real implementation, this would be a proper token validation)
             if (!key.equals(userEntity.getKey())) {
-                requestStatus[0] = "404";
+                requestStatus[0] = "401";
                 requestStatus[1] = "Unauthorized: Invalid user key";
                 return requestStatus;
             }

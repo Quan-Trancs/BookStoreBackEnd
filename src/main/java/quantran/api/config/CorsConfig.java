@@ -15,7 +15,7 @@ import java.util.List;
 
 @Configuration
 @Log4j2
-public class SecurityConfig implements WebMvcConfigurer {
+public class CorsConfig implements WebMvcConfigurer {
 
     @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
     private String allowedOrigins;

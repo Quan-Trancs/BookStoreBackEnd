@@ -1,415 +1,457 @@
 package quantran.api.controller;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import quantran.api.dto.BookDetailDto;
-import quantran.api.entity.BookType;
-import quantran.api.asyncProcessingBackgroundWorker.impl.AsyncProcessingBackgroundWorkerImpl;
-import quantran.api.asyncProcessingBackgroundWorker.task.Task;
-import quantran.api.asyncProcessingWorkAcceptor.AsyncProcessingWorkAcceptor;
-import quantran.api.common.UrlConstant;
-import quantran.api.errorHandle.GenericErrorHandler;
-import quantran.api.model.BookModel;
-import quantran.api.model.UserModel;
+import quantran.api.dto.BookRequestDto;
+import quantran.api.dto.BookResponseDto;
+import quantran.api.entity.BookTypeEntity;
 import quantran.api.page.Paginate;
 import quantran.api.service.BookService;
-import quantran.api.service.TaskService;
-import quantran.api.dto.AsyncTaskRequest;
-import quantran.api.service.AsyncTaskService;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Pattern;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
-import static java.lang.Integer.parseInt;
-
+/**
+ * Standardized BookController with RESTful endpoints and consistent naming conventions.
+ * This controller provides standardized CRUD operations and query methods for books.
+ */
 @RestController
-@Log4j2
-@RequiredArgsConstructor
+@RequestMapping("/api/v1/books")
 @Validated
-@RequestMapping(UrlConstant.BOOK)
+@Log4j2
 public class BookController {
-    private final BookService bookService;
-    private final TaskService taskService;
-    private final AsyncProcessingWorkAcceptor asyncProcessingWorkAcceptor;
-    private final AsyncProcessingBackgroundWorkerImpl asyncProcessingBackgroundWorkerImpl;
-    private final AsyncTaskService asyncTaskService;
-    
-    @GetMapping(UrlConstant.LIST)
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<Paginate> list( @RequestParam (defaultValue = "") String searchName, @RequestParam (defaultValue = "") String searchAuthor, @RequestParam (defaultValue = "") String searchId, @RequestParam (defaultValue = "0") String page, @RequestParam (defaultValue = "5") String pageSize) {
-        log.info("Start list()");
 
-        Paginate result = bookService.getBook(searchName, searchAuthor, searchId, null, null, parseInt(page), parseInt(pageSize) );
+    @Autowired
+    private BookService bookService;
 
-        log.info("End list()");
-        return ResponseEntity.ok(result);
-    }
-    
-    @GetMapping(UrlConstant.TYPE)
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookType>> getBookType() {
-        log.info("Start list()");
+    // Standardized CRUD Operations
 
-        List<BookType> result = bookService.getBookType();
-
-        log.info("End list()");
-        return ResponseEntity.ok(result);
-    }
-    
-    @GetMapping(UrlConstant.DOWNLOAD)
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<byte[]> downloadBook() throws IOException {
-        log.info("Start downloadBook()");
-        ResponseEntity<byte[]> result = bookService.downloadBook();
-        log.info("End downloadBook()");
-        return result;
-    }
-    
-    @PostMapping(UrlConstant.UPLOAD)
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public void uploadBook(@RequestParam MultipartFile bookFile) throws IOException {
-        log.info("Start uploadBook()");
-        bookService.uploadBook(bookFile);
-        log.info("End uploadBook()");
-    }
-    
-    @PostMapping(UrlConstant.ADDBOOK)
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<String> addBook(
-            @RequestParam @NotBlank(message = "Book ID is required") String addId, 
-            @RequestParam @NotBlank(message = "Book name is required") String addName, 
-            @RequestParam @NotBlank(message = "Book type is required") String addBookType,
-            @RequestParam @NotBlank(message = "Author is required") String addAuthor, 
-            @RequestParam @NotBlank(message = "Price is required") String addPrice) {
-        BookModel bookModel = new BookModel(addId.trim(), addName, addAuthor, addPrice, addBookType);
+    /**
+     * Create a new book.
+     * 
+     * @param request The book creation request
+     * @return The created book response
+     */
+    @PostMapping
+    public ResponseEntity<BookResponseDto> createBook(@Valid @RequestBody BookRequestDto request) {
+        log.info("Creating book with ID: {}", request.getId());
+        
         try {
-            log.info("Start addBook()");
-            bookService.addBook(bookModel);
-            log.info("End addBook()");
-            return ResponseEntity.ok("Book added successfully");
+            BookResponseDto createdBook = bookService.createBook(request);
+            log.info("Successfully created book with ID: {}", createdBook.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdBook);
         } catch (Exception e) {
-            log.error("Error adding book: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error adding book: " + e.getMessage());
+            log.error("Error creating book with ID: {}", request.getId(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
-    @PostMapping(UrlConstant.DELBOOK)
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<String> delBook(@Valid @RequestParam("delId") @NotNull(message = "Delete ID is required!") @NotEmpty(message = "Delete ID is required") @NotBlank(message = "Invalid delete ID!") String delId) {
-        try {
-            log.info("Start delBook()");
-            bookService.delBook(delId);
-            log.info("End delBook()");
-            return ResponseEntity.ok("Book deleted successfully");
-        } catch (EmptyResultDataAccessException e) {
-            log.error("Book not found for deletion: {}", delId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Book not found with ID: " + delId);
-        } catch (Exception e) {
-            log.error("Error deleting book: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting book: " + e.getMessage());
-        }
-    }
-    
-    @PostMapping(UrlConstant.UPDATEBOOK)
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<AsyncTaskRequest> updateBook(
-            @RequestHeader @NotBlank(message = "User name is required") String name, 
-            @RequestHeader @NotBlank(message = "User key is required") String key, 
-            @RequestParam @NotBlank(message = "Book ID is required") String updateId, 
-            @RequestParam @NotBlank(message = "Book name is required") String updateName, 
-            @RequestParam @NotBlank(message = "Book type is required") String updateType, 
-            @RequestParam @NotBlank(message = "Author is required") String updateAuthor, 
-            @RequestParam @NotBlank(message = "Price is required") String updatePrice) {
-        
-        log.info("Start updateBook() - ID: {}", updateId);
-        
-        BookModel bookModel = new BookModel(updateId.trim(), updateName, updateAuthor, updatePrice, updateType);
-        UserModel userModel = new UserModel(name, key);
+
+    /**
+     * Find a book by its ID.
+     * 
+     * @param id The book ID
+     * @return The book response if found
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<BookResponseDto> findBookById(
+            @PathVariable @Pattern(regexp = "^[A-Z0-9]{3,20}$", message = "Invalid book ID format") String id) {
+        log.info("Finding book by ID: {}", id);
         
         try {
-            // Validate user authentication
-            String[] status = asyncProcessingWorkAcceptor.workAcceptor(userModel);
-            if ("404".equals(status[0])) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            Optional<BookResponseDto> book = bookService.findBookById(id);
+            if (book.isPresent()) {
+                log.info("Found book with ID: {}", id);
+                return ResponseEntity.ok(book.get());
+            } else {
+                log.warn("Book not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
             }
-            
-            // Submit task for async processing
-            AsyncTaskRequest task = asyncTaskService.submitTask("update_book", bookModel, name);
-            
-            // Add task to background worker queue
-            Task backgroundTask = new Task("update", task.getTaskId(), bookModel);
-            asyncProcessingBackgroundWorkerImpl.addToRequestQueue(backgroundTask);
-            
-            log.info("End updateBook(), task submitted - taskId: {}", task.getTaskId());
-            return ResponseEntity.accepted().body(task);
-            
         } catch (Exception e) {
-            log.error("Error submitting update task", e);
+            log.error("Error finding book with ID: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Enhanced book management endpoints
-    @GetMapping("/detail/{id}")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<BookDetailDto> getBookById(@PathVariable String id) {
-        log.info("Getting book detail by ID: {}", id);
+    /**
+     * Find books with search criteria.
+     * 
+     * @param title Book title filter
+     * @param author Author name filter
+     * @param isbn ISBN filter
+     * @param genre Genre filter
+     * @param publisher Publisher filter
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @return Paginated list of book responses
+     */
+    @GetMapping
+    public ResponseEntity<Paginate<BookResponseDto>> findBooks(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) String isbn,
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String publisher,
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page must be non-negative") int page,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "Size must be positive") int size) {
+        
+        log.info("Finding books with filters - title: {}, author: {}, isbn: {}, genre: {}, publisher: {}, page: {}, size: {}", 
+                title, author, isbn, genre, publisher, page, size);
         
         try {
-            return bookService.getBookById(id)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+            Paginate<BookResponseDto> books = bookService.findBooks(title, author, isbn, genre, publisher, page, size);
+            log.info("Found {} books", books.getTotal());
+            return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting book by ID {}: {}", id, e.getMessage());
+            log.error("Error finding books", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Update an existing book.
+     * 
+     * @param id The book ID
+     * @param request The book update request
+     * @return The updated book response
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<BookResponseDto> updateBook(
+            @PathVariable @Pattern(regexp = "^[A-Z0-9]{3,20}$", message = "Invalid book ID format") String id,
+            @Valid @RequestBody BookRequestDto request) {
+        
+        log.info("Updating book with ID: {}", id);
+        
+        try {
+            BookResponseDto updatedBook = bookService.updateBook(id, request);
+            log.info("Successfully updated book with ID: {}", id);
+            return ResponseEntity.ok(updatedBook);
+        } catch (Exception e) {
+            log.error("Error updating book with ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Delete a book by its ID.
+     * 
+     * @param id The book ID
+     * @return No content response
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBook(
+            @PathVariable @Pattern(regexp = "^[A-Z0-9]{3,20}$", message = "Invalid book ID format") String id) {
+        
+        log.info("Deleting book with ID: {}", id);
+        
+        try {
+            bookService.deleteBook(id);
+            log.info("Successfully deleted book with ID: {}", id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error deleting book with ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Specialized Query Endpoints
+
+    /**
+     * Find a book by ISBN.
+     * 
+     * @param isbn The ISBN
+     * @return The book response if found
+     */
     @GetMapping("/isbn/{isbn}")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<BookDetailDto> getBookByIsbn(@PathVariable String isbn) {
-        log.info("Getting book by ISBN: {}", isbn);
+    public ResponseEntity<BookResponseDto> findBookByIsbn(
+            @PathVariable @Pattern(regexp = "^(?:\\d{10}|\\d{13})$", message = "Invalid ISBN format") String isbn) {
+        
+        log.info("Finding book by ISBN: {}", isbn);
         
         try {
-            return bookService.getBookByIsbn(isbn)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+            Optional<BookResponseDto> book = bookService.findBookByIsbn(isbn);
+            if (book.isPresent()) {
+                log.info("Found book with ISBN: {}", isbn);
+                return ResponseEntity.ok(book.get());
+            } else {
+                log.warn("Book not found with ISBN: {}", isbn);
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
-            log.error("Error getting book by ISBN {}: {}", isbn, e.getMessage());
+            log.error("Error finding book with ISBN: {}", isbn, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Find books by author ID.
+     * 
+     * @param authorId The author ID
+     * @return List of book responses
+     */
     @GetMapping("/author/{authorId}")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksByAuthor(@PathVariable Long authorId) {
-        log.info("Getting books by author ID: {}", authorId);
+    public ResponseEntity<List<BookResponseDto>> findBooksByAuthor(
+            @PathVariable @Min(value = 1, message = "Author ID must be positive") Long authorId) {
+        
+        log.info("Finding books by author ID: {}", authorId);
         
         try {
-            List<BookDetailDto> books = bookService.getBooksByAuthor(authorId);
+            List<BookResponseDto> books = bookService.findBooksByAuthor(authorId);
+            log.info("Found {} books for author ID: {}", books.size(), authorId);
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting books by author: {}", e.getMessage());
+            log.error("Error finding books by author ID: {}", authorId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Find books by genre ID.
+     * 
+     * @param genreId The genre ID
+     * @return List of book responses
+     */
     @GetMapping("/genre/{genreId}")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksByGenre(@PathVariable String genreId) {
-        log.info("Getting books by genre ID: {}", genreId);
+    public ResponseEntity<List<BookResponseDto>> findBooksByGenre(
+            @PathVariable @Pattern(regexp = "^[A-Z0-9]{3,20}$", message = "Invalid genre ID format") String genreId) {
+        
+        log.info("Finding books by genre ID: {}", genreId);
         
         try {
-            List<BookDetailDto> books = bookService.getBooksByGenre(genreId);
+            List<BookResponseDto> books = bookService.findBooksByGenre(genreId);
+            log.info("Found {} books for genre ID: {}", books.size(), genreId);
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting books by genre: {}", e.getMessage());
+            log.error("Error finding books by genre ID: {}", genreId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Find books by publisher ID.
+     * 
+     * @param publisherId The publisher ID
+     * @return List of book responses
+     */
     @GetMapping("/publisher/{publisherId}")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksByPublisher(@PathVariable Long publisherId) {
-        log.info("Getting books by publisher ID: {}", publisherId);
+    public ResponseEntity<List<BookResponseDto>> findBooksByPublisher(
+            @PathVariable @Min(value = 1, message = "Publisher ID must be positive") Long publisherId) {
+        
+        log.info("Finding books by publisher ID: {}", publisherId);
         
         try {
-            List<BookDetailDto> books = bookService.getBooksByPublisher(publisherId);
+            List<BookResponseDto> books = bookService.findBooksByPublisher(publisherId);
+            log.info("Found {} books for publisher ID: {}", books.size(), publisherId);
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting books by publisher: {}", e.getMessage());
+            log.error("Error finding books by publisher ID: {}", publisherId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Find books with low stock.
+     * 
+     * @return List of book responses with low stock
+     */
     @GetMapping("/low-stock")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksWithLowStock() {
-        log.info("Getting books with low stock");
+    public ResponseEntity<List<BookResponseDto>> findBooksWithLowStock() {
+        log.info("Finding books with low stock");
         
         try {
-            List<BookDetailDto> books = bookService.getBooksWithLowStock();
+            List<BookResponseDto> books = bookService.findBooksWithLowStock();
+            log.info("Found {} books with low stock", books.size());
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting books with low stock: {}", e.getMessage());
+            log.error("Error finding books with low stock", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/out-of-stock")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getOutOfStockBooks() {
-        log.info("Getting out of stock books");
+    /**
+     * Find books with active discounts.
+     * 
+     * @return List of book responses with discounts
+     */
+    @GetMapping("/discounts")
+    public ResponseEntity<List<BookResponseDto>> findBooksWithDiscount() {
+        log.info("Finding books with discounts");
         
         try {
-            List<BookDetailDto> books = bookService.getOutOfStockBooks();
+            List<BookResponseDto> books = bookService.findBooksWithDiscount();
+            log.info("Found {} books with discounts", books.size());
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting out of stock books: {}", e.getMessage());
+            log.error("Error finding books with discounts", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/discount")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksWithDiscount() {
-        log.info("Getting books with discount");
-        
-        try {
-            List<BookDetailDto> books = bookService.getBooksWithDiscount();
-            return ResponseEntity.ok(books);
-        } catch (Exception e) {
-            log.error("Error getting books with discount: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
+    /**
+     * Find books by publication year.
+     * 
+     * @param year The publication year
+     * @return List of book responses
+     */
     @GetMapping("/publication-year/{year}")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksByPublicationYear(@PathVariable int year) {
-        log.info("Getting books by publication year: {}", year);
+    public ResponseEntity<List<BookResponseDto>> findBooksByPublicationYear(
+            @PathVariable @Min(value = 1800, message = "Publication year must be at least 1800") int year) {
+        
+        log.info("Finding books by publication year: {}", year);
         
         try {
-            List<BookDetailDto> books = bookService.getBooksByPublicationYear(year);
+            List<BookResponseDto> books = bookService.findBooksByPublicationYear(year);
+            log.info("Found {} books for publication year: {}", books.size(), year);
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting books by publication year: {}", e.getMessage());
+            log.error("Error finding books by publication year: {}", year, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Find books by language.
+     * 
+     * @param language The language code
+     * @return List of book responses
+     */
     @GetMapping("/language/{language}")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksByLanguage(@PathVariable String language) {
-        log.info("Getting books by language: {}", language);
+    public ResponseEntity<List<BookResponseDto>> findBooksByLanguage(
+            @PathVariable @Pattern(regexp = "^[a-z]{2,3}$", message = "Invalid language code format") String language) {
+        
+        log.info("Finding books by language: {}", language);
         
         try {
-            List<BookDetailDto> books = bookService.getBooksByLanguage(language);
+            List<BookResponseDto> books = bookService.findBooksByLanguage(language);
+            log.info("Found {} books for language: {}", books.size(), language);
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting books by language: {}", e.getMessage());
+            log.error("Error finding books by language: {}", language, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Find books by format.
+     * 
+     * @param format The book format
+     * @return List of book responses
+     */
     @GetMapping("/format/{format}")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksByFormat(@PathVariable String format) {
-        log.info("Getting books by format: {}", format);
+    public ResponseEntity<List<BookResponseDto>> findBooksByFormat(
+            @PathVariable @Pattern(regexp = "^[A-Za-z\\s-]+$", message = "Invalid format") String format) {
+        
+        log.info("Finding books by format: {}", format);
         
         try {
-            List<BookDetailDto> books = bookService.getBooksByFormat(format);
+            List<BookResponseDto> books = bookService.findBooksByFormat(format);
+            log.info("Found {} books for format: {}", books.size(), format);
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting books by format: {}", e.getMessage());
+            log.error("Error finding books by format: {}", format, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Find books within a price range.
+     * 
+     * @param minPrice Minimum price
+     * @param maxPrice Maximum price
+     * @return List of book responses
+     */
     @GetMapping("/price-range")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<List<BookDetailDto>> getBooksByPriceRange(
-            @RequestParam java.math.BigDecimal minPrice,
-            @RequestParam java.math.BigDecimal maxPrice) {
-        log.info("Getting books by price range: {} - {}", minPrice, maxPrice);
+    public ResponseEntity<List<BookResponseDto>> findBooksByPriceRange(
+            @RequestParam @Min(value = 0, message = "Minimum price must be non-negative") BigDecimal minPrice,
+            @RequestParam @Min(value = 0, message = "Maximum price must be non-negative") BigDecimal maxPrice) {
+        
+        log.info("Finding books by price range: {} - {}", minPrice, maxPrice);
         
         try {
-            List<BookDetailDto> books = bookService.getBooksByPriceRange(minPrice, maxPrice);
+            List<BookResponseDto> books = bookService.findBooksByPriceRange(minPrice, maxPrice);
+            log.info("Found {} books in price range: {} - {}", books.size(), minPrice, maxPrice);
             return ResponseEntity.ok(books);
         } catch (Exception e) {
-            log.error("Error getting books by price range: {}", e.getMessage());
+            log.error("Error finding books by price range: {} - {}", minPrice, maxPrice, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Inventory management endpoints
-    @PostMapping("/{bookId}/stock")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<String> updateStock(
-            @PathVariable String bookId,
-            @RequestParam Integer quantity) {
-        log.info("Updating stock for book {}: {}", bookId, quantity);
+    // Business Logic Endpoints
+
+    /**
+     * Process book upload from file.
+     * 
+     * @param file The uploaded file
+     * @return Success response
+     */
+    @PostMapping("/upload")
+    public ResponseEntity<String> processBookUpload(@RequestParam("file") MultipartFile file) {
+        log.info("Processing book upload: {}", file.getOriginalFilename());
         
         try {
-            bookService.updateStock(bookId, quantity);
-            return ResponseEntity.ok("Stock updated successfully");
-        } catch (RuntimeException e) {
-            log.error("Error updating stock: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            bookService.processBookUpload(file);
+            log.info("Successfully processed book upload: {}", file.getOriginalFilename());
+            return ResponseEntity.ok("Book upload processed successfully");
+        } catch (IOException e) {
+            log.error("Error processing book upload: {}", file.getOriginalFilename(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing book upload: " + e.getMessage());
         } catch (Exception e) {
-            log.error("Error updating stock: {}", e.getMessage());
+            log.error("Error processing book upload: {}", file.getOriginalFilename(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing book upload");
+        }
+    }
+
+    /**
+     * Download books data.
+     * 
+     * @return Response entity with book data
+     */
+    @GetMapping("/download")
+    public ResponseEntity<byte[]> downloadBooks() {
+        log.info("Downloading books data");
+        
+        try {
+            ResponseEntity<byte[]> response = bookService.downloadBooks();
+            log.info("Successfully downloaded books data");
+            return response;
+        } catch (IOException e) {
+            log.error("Error downloading books data", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (Exception e) {
+            log.error("Error downloading books data", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @PostMapping("/{bookId}/reserve")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<String> reserveBook(
-            @PathVariable String bookId,
-            @RequestParam Integer quantity) {
-        log.info("Reserving book {}: {}", bookId, quantity);
+    /**
+     * Get all book types/genres.
+     * 
+     * @return List of book type entities
+     */
+    @GetMapping("/types")
+    public ResponseEntity<List<BookTypeEntity>> getBookTypes() {
+        log.info("Getting book types");
         
         try {
-            bookService.reserveBook(bookId, quantity);
-            return ResponseEntity.ok("Book reserved successfully");
-        } catch (RuntimeException e) {
-            log.error("Error reserving book: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            List<BookTypeEntity> bookTypes = bookService.getBookTypes();
+            log.info("Found {} book types", bookTypes.size());
+            return ResponseEntity.ok(bookTypes);
         } catch (Exception e) {
-            log.error("Error reserving book: {}", e.getMessage());
+            log.error("Error getting book types", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-    @PostMapping("/{bookId}/release")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<String> releaseBook(
-            @PathVariable String bookId,
-            @RequestParam Integer quantity) {
-        log.info("Releasing book {}: {}", bookId, quantity);
-        
-        try {
-            bookService.releaseBook(bookId, quantity);
-            return ResponseEntity.ok("Book released successfully");
-        } catch (RuntimeException e) {
-            log.error("Error releasing book: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            log.error("Error releasing book: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/{bookId}/available")
-    @CrossOrigin(origins = UrlConstant.BOOKFE)
-    public ResponseEntity<Boolean> isBookAvailable(
-            @PathVariable String bookId,
-            @RequestParam Integer quantity) {
-        log.info("Checking availability for book {}: {}", bookId, quantity);
-        
-        try {
-            boolean available = bookService.isBookAvailable(bookId, quantity);
-            return ResponseEntity.ok(available);
-        } catch (RuntimeException e) {
-            log.error("Error checking book availability: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("Error checking book availability: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-}
+} 

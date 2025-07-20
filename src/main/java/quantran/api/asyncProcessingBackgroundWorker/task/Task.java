@@ -1,11 +1,7 @@
 package quantran.api.asyncProcessingBackgroundWorker.task;
 
-import lombok.RequiredArgsConstructor;
-import quantran.api.asyncProcessingBackgroundWorker.impl.AsyncProcessingBackgroundWorkerImpl;
 import quantran.api.model.BookModel;
-import quantran.api.service.BookService;
 
-@RequiredArgsConstructor
 public class Task {
     private String request;
     private BookModel bookModel;
@@ -15,7 +11,7 @@ public class Task {
         this.id = id;
     }
     public Task(String request, String id, BookModel bookModel) {
-        this.id = id; // Initialize the bookService
+        this.id = id;
         this.request = request;
         this.bookModel = bookModel;
     }

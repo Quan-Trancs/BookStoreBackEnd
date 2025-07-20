@@ -9,8 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import quantran.api.dto.BookDetailDto;
+import quantran.api.dto.BookRequestDto;
+import quantran.api.dto.BookResponseDto;
 import quantran.api.entity.BookEntity;
-import quantran.api.entity.BookType;
+import quantran.api.entity.BookTypeEntity;
 import quantran.api.business.BookBusiness;
 import quantran.api.model.BookModel;
 import quantran.api.page.Paginate;
@@ -243,13 +245,19 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "bookTypes")
-    public List<BookType> getBookType() {
-        log.info("Start getBookType()");
+    public List<BookTypeEntity> getBookType() {
+        log.debug("Getting all book types");
+        return bookBusiness.getBookType();
+    }
 
-        List<BookType> bookTypes = bookBusiness.getBookType();
+    @Override
+    public List<BookTypeEntity> getBookTypes() {
+        return getBookType();
+    }
 
-        log.info("End getBookType()");
-        return bookTypes;
+    @Override
+    public ResponseEntity<byte[]> downloadBooks() throws IOException {
+        return downloadBook();
     }
     
     @Override
@@ -331,7 +339,6 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "booksWithLowStock")
     public List<BookDetailDto> getBooksWithLowStock() {
@@ -341,7 +348,6 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "outOfStockBooks")
     public List<BookDetailDto> getOutOfStockBooks() {
@@ -351,7 +357,6 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "booksWithDiscount")
     public List<BookDetailDto> getBooksWithDiscount() {
@@ -361,7 +366,6 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "booksByPublicationYear", key = "#year")
     public List<BookDetailDto> getBooksByPublicationYear(int year) {
@@ -371,7 +375,6 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "booksByLanguage", key = "#language")
     public List<BookDetailDto> getBooksByLanguage(String language) {
@@ -381,7 +384,6 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "booksByFormat", key = "#format")
     public List<BookDetailDto> getBooksByFormat(String format) {
@@ -391,7 +393,6 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "booksByPriceRange", key = "#minPrice + '-' + #maxPrice")
     public List<BookDetailDto> getBooksByPriceRange(java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
@@ -402,7 +403,6 @@ public class BookServiceImpl implements BookService {
     }
 
     // Inventory management methods
-    @Override
     @Transactional
     public void updateStock(String bookId, Integer quantity) {
         BookEntity book = bookRepository.findById(bookId)
@@ -411,7 +411,6 @@ public class BookServiceImpl implements BookService {
         bookRepository.save(book);
     }
 
-    @Override
     @Transactional
     public void reserveBook(String bookId, Integer quantity) {
         BookEntity book = bookRepository.findById(bookId)
@@ -420,7 +419,6 @@ public class BookServiceImpl implements BookService {
         bookRepository.save(book);
     }
 
-    @Override
     @Transactional
     public void releaseBook(String bookId, Integer quantity) {
         BookEntity book = bookRepository.findById(bookId)
@@ -429,7 +427,6 @@ public class BookServiceImpl implements BookService {
         bookRepository.save(book);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public boolean isBookAvailable(String bookId, Integer quantity) {
         BookEntity book = bookRepository.findById(bookId)
@@ -494,5 +491,220 @@ public class BookServiceImpl implements BookService {
                 .createdAt(book.getCreatedAt())
                 .updatedAt(book.getUpdatedAt())
                 .build();
+    }
+
+    // Standardized methods
+    @Override
+    public BookResponseDto createBook(BookRequestDto request) {
+        BookEntity book = new BookEntity();
+        book.setId(request.getId());
+        book.setTitle(request.getTitle());
+        book.setSubtitle(request.getSubtitle());
+        book.setIsbn(request.getIsbn());
+        book.setIsbn13(request.getIsbn13());
+        book.setDescription(request.getDescription());
+        book.setPageCount(request.getPageCount());
+        book.setLanguage(request.getLanguage());
+        book.setPublicationDate(request.getPublicationDate());
+        book.setEdition(request.getEdition());
+        book.setFormat(request.getFormat());
+        book.setPrice(request.getPrice());
+        book.setOriginalPrice(request.getOriginalPrice());
+        book.setDiscountPercentage(request.getDiscountPercentage());
+        book.setStockQuantity(request.getStockQuantity());
+        // Set default values for missing fields
+        book.setReservedQuantity(0);
+        book.setReorderPoint(5);
+        book.setMaxStock(100);
+        
+        BookEntity savedBook = create(book);
+        return convertToResponseDto(savedBook);
+    }
+
+    @Override
+    public Optional<BookResponseDto> findBookById(String id) {
+        return getById(id).map(this::convertToResponseDto);
+    }
+
+    @Override
+    public BookResponseDto updateBook(String id, BookRequestDto request) {
+        BookEntity book = ValidationUtil.validateEntityExists(
+            bookRepository.findById(id), id, "Book"
+        );
+        
+        book.setTitle(request.getTitle());
+        book.setSubtitle(request.getSubtitle());
+        book.setIsbn(request.getIsbn());
+        book.setIsbn13(request.getIsbn13());
+        book.setDescription(request.getDescription());
+        book.setPageCount(request.getPageCount());
+        book.setLanguage(request.getLanguage());
+        book.setPublicationDate(request.getPublicationDate());
+        book.setEdition(request.getEdition());
+        book.setFormat(request.getFormat());
+        book.setPrice(request.getPrice());
+        book.setOriginalPrice(request.getOriginalPrice());
+        book.setDiscountPercentage(request.getDiscountPercentage());
+        book.setStockQuantity(request.getStockQuantity());
+        // Keep existing values for missing fields
+        
+        BookEntity updatedBook = update(id, book);
+        return convertToResponseDto(updatedBook);
+    }
+
+    @Override
+    public void deleteBook(String id) {
+        delete(id);
+    }
+
+    @Override
+    public Paginate<BookResponseDto> findBooks(String title, String author, String isbn, String genre, String publisher, int page, int size) {
+        Paginate<BookModel> bookModels = getBook(title, author, null, genre, publisher, page, size);
+        
+        List<BookResponseDto> responseDtos = bookModels.getData().stream()
+            .map(this::convertBookModelToResponseDto)
+            .collect(Collectors.toList());
+        
+        return new Paginate<>(responseDtos, bookModels.getTotal());
+    }
+
+    @Override
+    public Optional<BookResponseDto> findBookByIsbn(String isbn) {
+        return getBookByIsbn(isbn).map(this::convertBookDetailToResponseDto);
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksByAuthor(Long authorId) {
+        return getBooksByAuthor(authorId).stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksByGenre(String genreId) {
+        return getBooksByGenre(genreId).stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksByPublisher(Long publisherId) {
+        return getBooksByPublisher(publisherId).stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksWithLowStock() {
+        return getBooksWithLowStock().stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksWithDiscount() {
+        return getBooksWithDiscount().stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksByPublicationYear(int year) {
+        return getBooksByPublicationYear(year).stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksByLanguage(String language) {
+        return getBooksByLanguage(language).stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksByFormat(String format) {
+        return getBooksByFormat(format).stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDto> findBooksByPriceRange(java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
+        return getBooksByPriceRange(minPrice, maxPrice).stream()
+            .map(this::convertBookDetailToResponseDto)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public void processBookUpload(MultipartFile bookFile) throws IOException {
+        uploadBook(bookFile);
+    }
+
+    // Helper methods for DTO conversion
+    private BookResponseDto convertToResponseDto(BookEntity book) {
+        return BookResponseDto.builder()
+            .id(book.getId())
+            .title(book.getTitle())
+            .subtitle(book.getSubtitle())
+            .isbn(book.getIsbn())
+            .isbn13(book.getIsbn13())
+            .description(book.getDescription())
+            .pageCount(book.getPageCount())
+            .language(book.getLanguage())
+            .publicationDate(book.getPublicationDate())
+            .edition(book.getEdition())
+            .format(book.getFormat())
+            .price(book.getPrice())
+            .originalPrice(book.getOriginalPrice())
+            .discountedPrice(book.getDiscountedPrice())
+            .discountPercentage(book.getDiscountPercentage())
+            .stockQuantity(book.getStockQuantity())
+            .availableQuantity(book.getAvailableQuantity())
+            .reservedQuantity(book.getReservedQuantity())
+            .reorderPoint(book.getReorderPoint())
+            .maxStock(book.getMaxStock())
+            .isLowStock(book.isLowStock())
+            .isOutOfStock(book.isOutOfStock())
+            .createdAt(book.getCreatedAt())
+            .updatedAt(book.getUpdatedAt())
+            .build();
+    }
+
+    private BookResponseDto convertBookModelToResponseDto(BookModel bookModel) {
+        return BookResponseDto.builder()
+            .id(bookModel.getId())
+            .title(bookModel.getName())
+            .price(new java.math.BigDecimal(bookModel.getPrice()))
+            .build();
+    }
+
+    private BookResponseDto convertBookDetailToResponseDto(BookDetailDto bookDetail) {
+        return BookResponseDto.builder()
+            .id(bookDetail.getId())
+            .title(bookDetail.getTitle())
+            .subtitle(bookDetail.getSubtitle())
+            .isbn(bookDetail.getIsbn())
+            .isbn13(bookDetail.getIsbn13())
+            .description(bookDetail.getDescription())
+            .pageCount(bookDetail.getPageCount())
+            .language(bookDetail.getLanguage())
+            .publicationDate(bookDetail.getPublicationDate())
+            .edition(bookDetail.getEdition())
+            .format(bookDetail.getFormat())
+            .price(bookDetail.getPrice())
+            .originalPrice(bookDetail.getOriginalPrice())
+            .discountedPrice(bookDetail.getDiscountedPrice())
+            .discountPercentage(bookDetail.getDiscountPercentage())
+            .stockQuantity(bookDetail.getStockQuantity())
+            .availableQuantity(bookDetail.getAvailableQuantity())
+            .reservedQuantity(bookDetail.getReservedQuantity())
+            .reorderPoint(bookDetail.getReorderPoint())
+            .maxStock(bookDetail.getMaxStock())
+            .isLowStock(bookDetail.isLowStock())
+            .isOutOfStock(bookDetail.isOutOfStock())
+            .createdAt(bookDetail.getCreatedAt())
+            .updatedAt(bookDetail.getUpdatedAt())
+            .build();
     }
 }

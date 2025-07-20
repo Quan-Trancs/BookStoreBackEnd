@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @Log4j2
 @RequiredArgsConstructor
-@RequestMapping("/api/task")
+@RequestMapping(UrlConstant.TASK)
 @CrossOrigin(origins = UrlConstant.BOOKFE)
 public class AsyncTaskController {
     

@@ -1,8 +1,6 @@
 package quantran.api.asyncProcessingBackgroundWorker.impl;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import quantran.api.asyncProcessingBackgroundWorker.AsyncProcessingBackgroundWorker;
 import quantran.api.asyncProcessingBackgroundWorker.task.Task;
@@ -20,11 +18,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class AsyncProcessingBackgroundWorkerImpl implements AsyncProcessingBackgroundWorker {
     private final TaskService taskService;
     private final ExecutorService executorService;
-    private static final int WORKERSNUM = 2;
+    private static final int WORKER_COUNT = 2;
     private Queue<Task> requestQueue = new ConcurrentLinkedQueue<>();
     private Queue<String> resultQueue = new ConcurrentLinkedQueue<>();
     private final Object LOCK = new Object();
-    private boolean workersStarted = false;
+    private volatile boolean workersStarted = false;
     private final AtomicBoolean shutdownRequested = new AtomicBoolean(false);
 
     public void addToRequestQueue(Task task) {
@@ -48,11 +46,11 @@ public class AsyncProcessingBackgroundWorkerImpl implements AsyncProcessingBackg
     }
 
     public AsyncProcessingBackgroundWorkerImpl(TaskService taskService) {
-        this.executorService = Executors.newFixedThreadPool(WORKERSNUM);
+        this.executorService = Executors.newFixedThreadPool(WORKER_COUNT);
         this.taskService = taskService;
     }
     public void startWorkers() {
-        for (int i = 0; i < WORKERSNUM; i++) {
+        for (int i = 0; i < WORKER_COUNT; i++) {
             final int workerId = i;
             executorService.execute(() -> {
                 log.info("Worker {} started", workerId);
@@ -97,6 +95,14 @@ public class AsyncProcessingBackgroundWorkerImpl implements AsyncProcessingBackg
         }
         
         executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
         log.info("Background workers shutdown complete");
     }
 

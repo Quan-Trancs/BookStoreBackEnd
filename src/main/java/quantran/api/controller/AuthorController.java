@@ -1,256 +1,298 @@
 package quantran.api.controller;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import quantran.api.dto.BookDetailDto;
-import quantran.api.entity.Author;
+import quantran.api.dto.AuthorRequestDto;
+import quantran.api.dto.AuthorResponseDto;
+import quantran.api.dto.BookResponseDto;
 import quantran.api.page.Paginate;
 import quantran.api.service.AuthorService;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Pattern;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Standardized AuthorController with RESTful endpoints and consistent naming conventions.
+ * This controller provides standardized CRUD operations and query methods for authors.
+ */
 @RestController
-@RequestMapping("/api/authors")
-@RequiredArgsConstructor
-@Log4j2
+@RequestMapping("/api/v1/authors")
 @Validated
+@Log4j2
 public class AuthorController {
 
-    private final AuthorService authorService;
+    @Autowired
+    private AuthorService authorService;
+
+    // Standardized CRUD Operations
 
     /**
-     * Get all authors with pagination and search
-     */
-    @GetMapping
-    public ResponseEntity<Paginate> getAuthors(
-            @RequestParam(required = false) String searchName,
-            @RequestParam(required = false) String searchCountry,
-            @RequestParam(required = false) Boolean isAlive,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        
-        log.info("Getting authors with search: name={}, country={}, alive={}, page={}, size={}", 
-                searchName, searchCountry, isAlive, page, pageSize);
-        
-        try {
-            Paginate result = authorService.getAuthors(searchName, searchCountry, isAlive, page, pageSize);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("Error getting authors: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * Get author by ID
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<Author> getAuthorById(@PathVariable Long id) {
-        log.info("Getting author by ID: {}", id);
-        
-        try {
-            Optional<Author> author = authorService.getById(id);
-            return author.map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            log.error("Error getting author by ID {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * Create a new author
+     * Create a new author.
+     * 
+     * @param request The author creation request
+     * @return The created author response
      */
     @PostMapping
-    public ResponseEntity<Author> createAuthor(@Valid @RequestBody Author author) {
-        log.info("Creating new author: {}", author.getName());
+    public ResponseEntity<AuthorResponseDto> createAuthor(@Valid @RequestBody AuthorRequestDto request) {
+        log.info("Creating author with name: {}", request.getName());
         
         try {
-            Author createdAuthor = authorService.create(author);
+            AuthorResponseDto createdAuthor = authorService.createAuthor(request);
+            log.info("Successfully created author with ID: {}", createdAuthor.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAuthor);
-        } catch (RuntimeException e) {
-            log.error("Error creating author: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            log.error("Error creating author: {}", e.getMessage());
+            log.error("Error creating author with name: {}", request.getName(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * Update an existing author
+     * Find an author by its ID.
+     * 
+     * @param id The author ID
+     * @return The author response if found
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<AuthorResponseDto> findAuthorById(
+            @PathVariable @Min(value = 1, message = "Author ID must be positive") Long id) {
+        log.info("Finding author by ID: {}", id);
+        
+        try {
+            Optional<AuthorResponseDto> author = authorService.findAuthorById(id);
+            if (author.isPresent()) {
+                log.info("Found author with ID: {}", id);
+                return ResponseEntity.ok(author.get());
+            } else {
+                log.warn("Author not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("Error finding author with ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Find authors with search criteria.
+     * 
+     * @param name Author name filter
+     * @param country Country filter
+     * @param isAlive Alive status filter
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @return Paginated list of author responses
+     */
+    @GetMapping
+    public ResponseEntity<Paginate<AuthorResponseDto>> findAuthors(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String country,
+            @RequestParam(required = false) Boolean isAlive,
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page must be non-negative") int page,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "Size must be positive") int size) {
+        
+        log.info("Finding authors with filters - name: {}, country: {}, isAlive: {}, page: {}, size: {}", 
+                name, country, isAlive, page, size);
+        
+        try {
+            Paginate<AuthorResponseDto> authors = authorService.findAuthors(name, country, isAlive, page, size);
+            log.info("Found {} authors", authors.getTotal());
+            return ResponseEntity.ok(authors);
+        } catch (Exception e) {
+            log.error("Error finding authors", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Update an existing author.
+     * 
+     * @param id The author ID
+     * @param request The author update request
+     * @return The updated author response
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Author> updateAuthor(@PathVariable Long id, @Valid @RequestBody Author author) {
+    public ResponseEntity<AuthorResponseDto> updateAuthor(
+            @PathVariable @Min(value = 1, message = "Author ID must be positive") Long id,
+            @Valid @RequestBody AuthorRequestDto request) {
+        
         log.info("Updating author with ID: {}", id);
         
         try {
-            Author updatedAuthor = authorService.update(id, author);
+            AuthorResponseDto updatedAuthor = authorService.updateAuthor(id, request);
+            log.info("Successfully updated author with ID: {}", id);
             return ResponseEntity.ok(updatedAuthor);
-        } catch (RuntimeException e) {
-            log.error("Error updating author: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            log.error("Error updating author: {}", e.getMessage());
+            log.error("Error updating author with ID: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * Delete an author
+     * Delete an author by its ID.
+     * 
+     * @param id The author ID
+     * @return No content response
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAuthor(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteAuthor(
+            @PathVariable @Min(value = 1, message = "Author ID must be positive") Long id) {
+        
         log.info("Deleting author with ID: {}", id);
         
         try {
-            authorService.delete(id);
+            authorService.deleteAuthor(id);
+            log.info("Successfully deleted author with ID: {}", id);
             return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            log.error("Error deleting author: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            log.error("Error deleting author: {}", e.getMessage());
+            log.error("Error deleting author with ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Specialized Query Endpoints
+
+    /**
+     * Find an author by name.
+     * 
+     * @param name The author name
+     * @return The author response if found
+     */
+    @GetMapping("/name/{name}")
+    public ResponseEntity<AuthorResponseDto> findAuthorByName(
+            @PathVariable @Pattern(regexp = "^[A-Za-z\\s\\-']+$", message = "Invalid author name format") String name) {
+        
+        log.info("Finding author by name: {}", name);
+        
+        try {
+            Optional<AuthorResponseDto> author = authorService.findAuthorByName(name);
+            if (author.isPresent()) {
+                log.info("Found author with name: {}", name);
+                return ResponseEntity.ok(author.get());
+            } else {
+                log.warn("Author not found with name: {}", name);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("Error finding author with name: {}", name, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * Get authors by country
+     * Find authors by country.
+     * 
+     * @param country The country
+     * @return List of author responses
      */
     @GetMapping("/country/{country}")
-    public ResponseEntity<List<Author>> getAuthorsByCountry(@PathVariable String country) {
-        log.info("Getting authors by country: {}", country);
+    public ResponseEntity<List<AuthorResponseDto>> findAuthorsByCountry(
+            @PathVariable @Pattern(regexp = "^[A-Za-z\\s\\-']+$", message = "Invalid country format") String country) {
+        
+        log.info("Finding authors by country: {}", country);
         
         try {
-            List<Author> authors = authorService.getAuthorsByCountry(country);
+            List<AuthorResponseDto> authors = authorService.findAuthorsByCountry(country);
+            log.info("Found {} authors for country: {}", authors.size(), country);
             return ResponseEntity.ok(authors);
         } catch (Exception e) {
-            log.error("Error getting authors by country: {}", e.getMessage());
+            log.error("Error finding authors by country: {}", country, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * Get living authors
-     */
-    @GetMapping("/living")
-    public ResponseEntity<List<Author>> getLivingAuthors() {
-        log.info("Getting living authors");
-        
-        try {
-            List<Author> authors = authorService.getLivingAuthors();
-            return ResponseEntity.ok(authors);
-        } catch (Exception e) {
-            log.error("Error getting living authors: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * Get authors by birth year range
+     * Find authors by birth year range.
+     * 
+     * @param startYear Start year
+     * @param endYear End year
+     * @return List of author responses
      */
     @GetMapping("/birth-year-range")
-    public ResponseEntity<List<Author>> getAuthorsByBirthYearRange(
-            @RequestParam int startYear,
-            @RequestParam int endYear) {
-        log.info("Getting authors by birth year range: {} - {}", startYear, endYear);
+    public ResponseEntity<List<AuthorResponseDto>> findAuthorsByBirthYearRange(
+            @RequestParam @Min(value = 1800, message = "Start year must be at least 1800") int startYear,
+            @RequestParam @Min(value = 1800, message = "End year must be at least 1800") int endYear) {
+        
+        log.info("Finding authors by birth year range: {} - {}", startYear, endYear);
         
         try {
-            List<Author> authors = authorService.getAuthorsByBirthYearRange(startYear, endYear);
+            List<AuthorResponseDto> authors = authorService.findAuthorsByBirthYearRange(startYear, endYear);
+            log.info("Found {} authors in birth year range: {} - {}", authors.size(), startYear, endYear);
             return ResponseEntity.ok(authors);
         } catch (Exception e) {
-            log.error("Error getting authors by birth year range: {}", e.getMessage());
+            log.error("Error finding authors by birth year range: {} - {}", startYear, endYear, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * Get top authors by book count
+     * Find authors by book genre.
+     * 
+     * @param genreName The genre name
+     * @return List of author responses
      */
-    @GetMapping("/top")
-    public ResponseEntity<List<Author>> getTopAuthorsByBookCount(
-            @RequestParam(defaultValue = "10") int limit) {
-        log.info("Getting top authors by book count, limit: {}", limit);
+    @GetMapping("/genre/{genreName}")
+    public ResponseEntity<List<AuthorResponseDto>> findAuthorsByBookGenre(
+            @PathVariable @Pattern(regexp = "^[A-Za-z\\s\\-']+$", message = "Invalid genre name format") String genreName) {
+        
+        log.info("Finding authors by book genre: {}", genreName);
         
         try {
-            List<Author> authors = authorService.getTopAuthorsByBookCount(limit);
+            List<AuthorResponseDto> authors = authorService.findAuthorsByBookGenre(genreName);
+            log.info("Found {} authors for book genre: {}", authors.size(), genreName);
             return ResponseEntity.ok(authors);
         } catch (Exception e) {
-            log.error("Error getting top authors: {}", e.getMessage());
+            log.error("Error finding authors by book genre: {}", genreName, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * Get authors by book genre
+     * Find authors by book publisher.
+     * 
+     * @param publisherName The publisher name
+     * @return List of author responses
      */
-    @GetMapping("/by-genre/{genreName}")
-    public ResponseEntity<List<Author>> getAuthorsByBookGenre(@PathVariable String genreName) {
-        log.info("Getting authors by book genre: {}", genreName);
+    @GetMapping("/publisher/{publisherName}")
+    public ResponseEntity<List<AuthorResponseDto>> findAuthorsByBookPublisher(
+            @PathVariable @Pattern(regexp = "^[A-Za-z\\s\\-']+$", message = "Invalid publisher name format") String publisherName) {
+        
+        log.info("Finding authors by book publisher: {}", publisherName);
         
         try {
-            List<Author> authors = authorService.getAuthorsByBookGenre(genreName);
+            List<AuthorResponseDto> authors = authorService.findAuthorsByBookPublisher(publisherName);
+            log.info("Found {} authors for book publisher: {}", authors.size(), publisherName);
             return ResponseEntity.ok(authors);
         } catch (Exception e) {
-            log.error("Error getting authors by book genre: {}", e.getMessage());
+            log.error("Error finding authors by book publisher: {}", publisherName, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * Get authors by book publisher
+     * Find books by author ID.
+     * 
+     * @param authorId The author ID
+     * @return List of book responses
      */
-    @GetMapping("/by-publisher/{publisherName}")
-    public ResponseEntity<List<Author>> getAuthorsByBookPublisher(@PathVariable String publisherName) {
-        log.info("Getting authors by book publisher: {}", publisherName);
+    @GetMapping("/{authorId}/books")
+    public ResponseEntity<List<BookResponseDto>> findBooksByAuthor(
+            @PathVariable @Min(value = 1, message = "Author ID must be positive") Long authorId) {
+        
+        log.info("Finding books by author ID: {}", authorId);
         
         try {
-            List<Author> authors = authorService.getAuthorsByBookPublisher(publisherName);
-            return ResponseEntity.ok(authors);
-        } catch (Exception e) {
-            log.error("Error getting authors by book publisher: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * Get books by author
-     */
-    @GetMapping("/{id}/books")
-    public ResponseEntity<List<BookDetailDto>> getBooksByAuthor(@PathVariable Long id) {
-        log.info("Getting books by author ID: {}", id);
-        
-        try {
-            List<BookDetailDto> books = authorService.getBooksByAuthor(id);
+            List<BookResponseDto> books = authorService.findBooksByAuthor(authorId);
+            log.info("Found {} books for author ID: {}", books.size(), authorId);
             return ResponseEntity.ok(books);
-        } catch (RuntimeException e) {
-            log.error("Error getting books by author: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            log.error("Error getting books by author: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * Get total author count
-     */
-    @GetMapping("/count")
-    public ResponseEntity<Long> getTotalAuthorCount() {
-        log.info("Getting total author count");
-        
-        try {
-            long count = authorService.getTotalAuthorCount();
-            return ResponseEntity.ok(count);
-        } catch (Exception e) {
-            log.error("Error getting total author count: {}", e.getMessage());
+            log.error("Error finding books by author ID: {}", authorId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

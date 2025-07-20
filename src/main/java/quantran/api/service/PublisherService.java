@@ -1,71 +1,201 @@
 package quantran.api.service;
 
-import quantran.api.dto.BookDetailDto;
-import quantran.api.entity.Publisher;
+import quantran.api.entity.PublisherEntity;
 import quantran.api.page.Paginate;
+import quantran.api.dto.PublisherRequestDto;
+import quantran.api.dto.PublisherResponseDto;
+import quantran.api.dto.BookResponseDto;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface PublisherService extends BaseService<Publisher, Long> {
+/**
+ * Standardized PublisherService interface with consistent naming conventions.
+ * This interface provides standardized CRUD operations and query methods.
+ */
+public interface PublisherService extends BaseService<PublisherEntity, Long> {
+    
+    // Standardized CRUD operations
+    /**
+     * Create a new publisher using the standardized request DTO.
+     * @param request The publisher creation request
+     * @return The created publisher response
+     */
+    PublisherResponseDto createPublisher(PublisherRequestDto request);
     
     /**
-     * Get all publishers with pagination and search
+     * Find a publisher by its ID and return the standardized response DTO.
+     * @param id The publisher ID
+     * @return Optional containing the publisher response if found
      */
-    Paginate<Publisher> getPublishers(String searchName, String searchCountry, String searchCity, Boolean isActive, int page, int pageSize);
+    Optional<PublisherResponseDto> findPublisherById(Long id);
     
     /**
-     * Get publisher by name
+     * Update an existing publisher using the standardized request DTO.
+     * @param id The publisher ID
+     * @param request The publisher update request
+     * @return The updated publisher response
      */
-    Optional<Publisher> getPublisherByName(String name);
+    PublisherResponseDto updatePublisher(Long id, PublisherRequestDto request);
     
     /**
-     * Get publishers by country
+     * Delete a publisher by its ID.
+     * @param id The publisher ID
      */
-    List<Publisher> getPublishersByCountry(String country);
+    void deletePublisher(Long id);
+    
+    // Standardized query methods
+    /**
+     * Find publishers with standardized search parameters.
+     * @param name Publisher name filter
+     * @param country Country filter
+     * @param city City filter
+     * @param isActive Active status filter
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @return Paginated list of publisher responses
+     */
+    Paginate<PublisherResponseDto> findPublishers(String name, String country, String city, Boolean isActive, int page, int size);
     
     /**
-     * Get publishers by city
+     * Find a publisher by name.
+     * @param name The publisher name
+     * @return Optional containing the publisher response if found
      */
-    List<Publisher> getPublishersByCity(String city);
+    Optional<PublisherResponseDto> findPublisherByName(String name);
     
     /**
-     * Get publishers by founded year
+     * Find publishers by country.
+     * @param country The country
+     * @return List of publisher responses
      */
-    List<Publisher> getPublishersByFoundedYear(Integer foundedYear);
+    List<PublisherResponseDto> findPublishersByCountry(String country);
     
     /**
-     * Get publishers founded before a specific year
+     * Find publishers by city.
+     * @param city The city
+     * @return List of publisher responses
      */
-    List<Publisher> getPublishersFoundedBefore(Integer year);
+    List<PublisherResponseDto> findPublishersByCity(String city);
     
     /**
-     * Get publishers founded after a specific year
+     * Find publishers by founded year.
+     * @param foundedYear The founded year
+     * @return List of publisher responses
      */
-    List<Publisher> getPublishersFoundedAfter(Integer year);
+    List<PublisherResponseDto> findPublishersByFoundedYear(Integer foundedYear);
     
     /**
-     * Get top publishers by book count
+     * Find publishers founded before a specific year.
+     * @param year The year
+     * @return List of publisher responses
      */
-    List<Publisher> getTopPublishersByBookCount(int limit);
+    List<PublisherResponseDto> findPublishersFoundedBefore(Integer year);
     
     /**
-     * Get publishers by book genre
+     * Find publishers founded after a specific year.
+     * @param year The year
+     * @return List of publisher responses
      */
-    List<Publisher> getPublishersByBookGenre(String genreName);
+    List<PublisherResponseDto> findPublishersFoundedAfter(Integer year);
     
     /**
-     * Get publishers by book author
+     * Find publishers by book genre.
+     * @param genreName The genre name
+     * @return List of publisher responses
      */
-    List<Publisher> getPublishersByBookAuthor(String authorName);
+    List<PublisherResponseDto> findPublishersByBookGenre(String genreName);
     
     /**
-     * Get books by publisher
+     * Find publishers by book author.
+     * @param authorName The author name
+     * @return List of publisher responses
      */
-    List<BookDetailDto> getBooksByPublisher(Long publisherId);
+    List<PublisherResponseDto> findPublishersByBookAuthor(String authorName);
     
     /**
-     * Get total publisher count
+     * Find books by publisher ID.
+     * @param publisherId The publisher ID
+     * @return List of book responses
      */
-    long getTotalPublisherCount();
+    List<BookResponseDto> findBooksByPublisher(Long publisherId);
+    
+    // Legacy methods (deprecated for backward compatibility)
+    /**
+     * @deprecated Use {@link #createPublisher(PublisherRequestDto)} instead.
+     */
+    @Deprecated
+    PublisherEntity createPublisher(PublisherEntity publisher);
+    
+    /**
+     * @deprecated Use {@link #updatePublisher(Long, PublisherRequestDto)} instead.
+     */
+    @Deprecated
+    PublisherEntity updatePublisher(Long id, PublisherEntity publisher);
+    
+    /**
+     * @deprecated Use {@link #deletePublisher(Long)} instead.
+     */
+    @Deprecated
+    void deletePublisherLegacy(Long id);
+    
+    /**
+     * @deprecated Use {@link #findPublishers(String, String, String, Boolean, int, int)} instead.
+     */
+    @Deprecated
+    Paginate<PublisherEntity> getPublishers(String searchName, String searchCountry, String searchCity, Boolean isActive, int page, int pageSize);
+    
+    /**
+     * @deprecated Use {@link #findPublisherByName(String)} instead.
+     */
+    @Deprecated
+    Optional<PublisherEntity> getPublisherByName(String name);
+    
+    /**
+     * @deprecated Use {@link #findPublishersByCountry(String)} instead.
+     */
+    @Deprecated
+    List<PublisherEntity> getPublishersByCountry(String country);
+    
+    /**
+     * @deprecated Use {@link #findPublishersByCity(String)} instead.
+     */
+    @Deprecated
+    List<PublisherEntity> getPublishersByCity(String city);
+    
+    /**
+     * @deprecated Use {@link #findPublishersByFoundedYear(Integer)} instead.
+     */
+    @Deprecated
+    List<PublisherEntity> getPublishersByFoundedYear(Integer foundedYear);
+    
+    /**
+     * @deprecated Use {@link #findPublishersFoundedBefore(Integer)} instead.
+     */
+    @Deprecated
+    List<PublisherEntity> getPublishersFoundedBefore(Integer year);
+    
+    /**
+     * @deprecated Use {@link #findPublishersFoundedAfter(Integer)} instead.
+     */
+    @Deprecated
+    List<PublisherEntity> getPublishersFoundedAfter(Integer year);
+    
+    /**
+     * @deprecated Use {@link #findPublishersByBookGenre(String)} instead.
+     */
+    @Deprecated
+    List<PublisherEntity> getPublishersByBookGenre(String genreName);
+    
+    /**
+     * @deprecated Use {@link #findPublishersByBookAuthor(String)} instead.
+     */
+    @Deprecated
+    List<PublisherEntity> getPublishersByBookAuthor(String authorName);
+    
+    /**
+     * @deprecated Use {@link #findBooksByPublisher(Long)} instead.
+     */
+    @Deprecated
+    List<BookResponseDto> getBooksByPublisher(Long publisherId);
 } 
