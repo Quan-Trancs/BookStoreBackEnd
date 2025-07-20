@@ -15,7 +15,9 @@ import java.util.List;
 @Entity
 @Table(name = "publishers", indexes = {
     @Index(name = "idx_publisher_name", columnList = "name"),
-    @Index(name = "idx_publisher_country", columnList = "country")
+    @Index(name = "idx_publisher_country", columnList = "country"),
+    @Index(name = "idx_publisher_city", columnList = "city"), // For city filter
+    @Index(name = "idx_publisher_founded_year", columnList = "founded_year") // For founded year queries
 })
 @Data
 @NoArgsConstructor

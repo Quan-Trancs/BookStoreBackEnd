@@ -2,19 +2,15 @@ package quantran.api.util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Base64;
 
 public class PasswordUtil {
-    
-    private static final SecureRandom RANDOM = new SecureRandom();
     
     /**
      * Generate a salt for password hashing
      */
     public static String generateSalt() {
-        byte[] salt = new byte[16];
-        RANDOM.nextBytes(salt);
+        byte[] salt = RandomUtil.generateSecureRandomBytes(16);
         return Base64.getEncoder().encodeToString(salt);
     }
     
@@ -56,8 +52,8 @@ public class PasswordUtil {
         if (parts.length != 2) {
             return false;
         }
-        String hash = parts[0];
+        String hashedPassword = parts[0];
         String salt = parts[1];
-        return verifyPassword(password, hash, salt);
+        return verifyPassword(password, hashedPassword, salt);
     }
 } 

@@ -16,7 +16,9 @@ import java.util.Set;
 @Entity
 @Table(name = "authors", indexes = {
     @Index(name = "idx_author_name", columnList = "name"),
-    @Index(name = "idx_author_country", columnList = "country")
+    @Index(name = "idx_author_country", columnList = "country"),
+    @Index(name = "idx_author_birth_date", columnList = "birth_date"), // For birth year range queries
+    @Index(name = "idx_author_death_date", columnList = "death_date") // For living/deceased queries
 })
 @Data
 @NoArgsConstructor

@@ -7,9 +7,9 @@ import quantran.api.business.UserBusiness;
 import quantran.api.entity.UserEntity;
 import quantran.api.model.UserModel;
 import quantran.api.service.UserService;
+import quantran.api.util.RandomUtil;
 
 import java.util.List;
-import java.security.SecureRandom;
 
 @Service
 @Log4j2
@@ -17,19 +17,12 @@ import java.security.SecureRandom;
 public class UserServiceImpl implements UserService {
 
     private final UserBusiness userBusiness;
-    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     @Override
     public String generateUserKey(UserEntity userEntity) {
-        StringBuilder key = new StringBuilder(10);
-        for (int i = 0; i < 10; i++) {
-            int randomIndex = RANDOM.nextInt(CHARACTERS.length());
-            char randomChar = CHARACTERS.charAt(randomIndex);
-            key.append(randomChar);
-        }
-        return key.toString();
+        return RandomUtil.generateSecureRandomString(10);
     }
+    
     @Override
     public String login(UserModel userModel) {
         log.info("Start login()");

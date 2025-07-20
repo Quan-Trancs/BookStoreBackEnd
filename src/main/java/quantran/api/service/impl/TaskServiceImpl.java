@@ -10,9 +10,9 @@ import quantran.api.model.BookModel;
 import quantran.api.service.BookService;
 import quantran.api.service.TaskService;
 import quantran.api.service.AsyncTaskService;
+import quantran.api.util.RandomUtil;
 
 import java.math.BigDecimal;
-import java.util.Random;
 
 @Service
 @Log4j2
@@ -112,7 +112,7 @@ public class TaskServiceImpl implements TaskService {
     // Simulate inventory check
     private boolean checkInventoryAvailability(String bookId) {
         // Simulate 95% success rate
-        return new Random().nextInt(100) < 95;
+        return RandomUtil.nextInt(100) < 95;
     }
     
     // Simulate dynamic pricing calculation
@@ -122,7 +122,7 @@ public class TaskServiceImpl implements TaskService {
             BigDecimal basePrice = new BigDecimal(priceStr);
             
             // Apply dynamic pricing factors (demand, seasonality, etc.)
-            double demandFactor = 0.9 + (new Random().nextDouble() * 0.3); // 0.9 to 1.2
+            double demandFactor = 0.9 + (RandomUtil.nextDouble() * 0.3); // 0.9 to 1.2
             double seasonalityFactor = 1.0 + (Math.sin(System.currentTimeMillis() / 1000000.0) * 0.1);
             
             return basePrice.multiply(BigDecimal.valueOf(demandFactor * seasonalityFactor))
