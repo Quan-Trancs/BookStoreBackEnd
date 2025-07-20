@@ -56,7 +56,7 @@ public class PublisherController {
         log.info("Getting publisher by ID: {}", id);
         
         try {
-            Optional<Publisher> publisher = publisherService.getPublisherById(id);
+            Optional<Publisher> publisher = publisherService.getById(id);
             return publisher.map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
@@ -73,7 +73,7 @@ public class PublisherController {
         log.info("Creating new publisher: {}", publisher.getName());
         
         try {
-            Publisher createdPublisher = publisherService.createPublisher(publisher);
+            Publisher createdPublisher = publisherService.create(publisher);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdPublisher);
         } catch (RuntimeException e) {
             log.error("Error creating publisher: {}", e.getMessage());
@@ -92,7 +92,7 @@ public class PublisherController {
         log.info("Updating publisher with ID: {}", id);
         
         try {
-            Publisher updatedPublisher = publisherService.updatePublisher(id, publisher);
+            Publisher updatedPublisher = publisherService.update(id, publisher);
             return ResponseEntity.ok(updatedPublisher);
         } catch (RuntimeException e) {
             log.error("Error updating publisher: {}", e.getMessage());
@@ -111,7 +111,7 @@ public class PublisherController {
         log.info("Deleting publisher with ID: {}", id);
         
         try {
-            publisherService.deletePublisher(id);
+            publisherService.delete(id);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             log.error("Error deleting publisher: {}", e.getMessage());

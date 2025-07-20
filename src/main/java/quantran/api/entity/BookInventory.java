@@ -37,14 +37,17 @@ public class BookInventory {
     
     @Column(name = "reserved_quantity", nullable = false)
     @Min(value = 0, message = "Reserved quantity cannot be negative")
+    @Builder.Default
     private Integer reservedQuantity = 0;
     
     @Column(name = "reorder_point", nullable = false)
     @Min(value = 0, message = "Reorder point cannot be negative")
+    @Builder.Default
     private Integer reorderPoint = 5;
     
     @Column(name = "max_stock", nullable = false)
     @Min(value = 1, message = "Max stock must be at least 1")
+    @Builder.Default
     private Integer maxStock = 100;
     
     @Column(name = "last_updated", nullable = false)

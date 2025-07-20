@@ -478,7 +478,7 @@ public class BookServiceImpl implements BookService {
                         .name(genre.getName())
                         .description(genre.getDescription())
                         .ageRating(genre.getAgeRating())
-                        .bookCount(genre.getBookCount())
+                        .bookCount(genre.getBookEntities() != null ? genre.getBookEntities().size() : 0)
                         .build())
                     .collect(Collectors.toList()))
                 .publisher(book.getPublisher() != null ? BookDetailDto.PublisherDto.builder()

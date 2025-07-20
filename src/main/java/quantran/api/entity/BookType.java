@@ -1,102 +1,21 @@
 package quantran.api.entity;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-
-import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
-import java.time.LocalDateTime;
-import java.util.List;
-
-@Entity
-@Table(name = "bookType", indexes = {
-    @Index(name = "idx_booktype_name", columnList = "name"),
-    @Index(name = "idx_booktype_parent", columnList = "parentId")
-})
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class BookType {
+/**
+ * @deprecated This class is deprecated. Use {@link BookTypeEntity} instead for consistency with naming conventions.
+ * The BookTypeEntity provides the same functionality with standardized naming.
+ */
+@Deprecated
+public class BookType extends BookTypeEntity {
     
-    @Id
-    @Column(name = "id", length = 50)
-    @NotBlank(message = "Book type ID is required")
-    private String id;
-    
-    @Column(name = "name", nullable = false, length = 100)
-    @NotBlank(message = "Book type name is required")
-    @Size(min = 1, max = 100, message = "Book type name must be between 1 and 100 characters")
-    private String name;
-    
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
-    
-    @Column(name = "parent_id", length = 50)
-    private String parentId; // For hierarchical categories
-    
-    @Column(name = "age_rating", length = 10)
-    private String ageRating; // G, PG, PG-13, R, etc.
-    
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
-    
-    @Column(name = "sort_order")
-    private Integer sortOrder;
-    
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    
-    @OneToMany(mappedBy = "bookType")
-    private List<BookEntity> bookEntities;
-    
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (isActive == null) {
-            isActive = true;
-        }
+    public BookType() {
+        super();
     }
     
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public BookType(String id, String name, String description, String parentId, String ageRating, Boolean isActive, Integer sortOrder) {
+        super(id, name, description, parentId, ageRating, isActive, sortOrder, null, null, null);
     }
     
-    // Constructor for backward compatibility
-    public BookType(String bookType) {
-        this.id = bookType;
-        this.name = bookType;
-        this.isActive = true;
-        this.createdAt = LocalDateTime.now();
-    }
-    
-    // Helper methods
-    public boolean isRootCategory() {
-        return parentId == null || parentId.isEmpty();
-    }
-    
-    public boolean hasChildren() {
-        return bookEntities != null && !bookEntities.isEmpty();
-    }
-    
-    public String getFullPath() {
-        if (isRootCategory()) {
-            return name;
-        }
-        // This would need to be implemented with actual parent lookup
-        return name;
-    }
-    
-    public int getBookCount() {
-        return bookEntities != null ? bookEntities.size() : 0;
+    public BookType(String id, String name, String description) {
+        super(id, name, description, null, null, true, null, null, null, null);
     }
 } 

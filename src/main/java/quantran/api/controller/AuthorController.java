@@ -55,7 +55,7 @@ public class AuthorController {
         log.info("Getting author by ID: {}", id);
         
         try {
-            Optional<Author> author = authorService.getAuthorById(id);
+            Optional<Author> author = authorService.getById(id);
             return author.map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
@@ -72,7 +72,7 @@ public class AuthorController {
         log.info("Creating new author: {}", author.getName());
         
         try {
-            Author createdAuthor = authorService.createAuthor(author);
+            Author createdAuthor = authorService.create(author);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAuthor);
         } catch (RuntimeException e) {
             log.error("Error creating author: {}", e.getMessage());
@@ -91,7 +91,7 @@ public class AuthorController {
         log.info("Updating author with ID: {}", id);
         
         try {
-            Author updatedAuthor = authorService.updateAuthor(id, author);
+            Author updatedAuthor = authorService.update(id, author);
             return ResponseEntity.ok(updatedAuthor);
         } catch (RuntimeException e) {
             log.error("Error updating author: {}", e.getMessage());
@@ -110,7 +110,7 @@ public class AuthorController {
         log.info("Deleting author with ID: {}", id);
         
         try {
-            authorService.deleteAuthor(id);
+            authorService.delete(id);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             log.error("Error deleting author: {}", e.getMessage());
