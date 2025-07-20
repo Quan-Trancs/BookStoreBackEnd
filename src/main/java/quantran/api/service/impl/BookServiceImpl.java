@@ -16,6 +16,7 @@ import quantran.api.model.BookModel;
 import quantran.api.page.Paginate;
 import quantran.api.repository.BookRepository;
 import quantran.api.service.BookService;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -118,6 +119,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "bookTypes")
     public List<BookType> getBookType() {
         log.info("Start getBookType()");
 
@@ -154,6 +156,7 @@ public class BookServiceImpl implements BookService {
     // Enhanced book management methods
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "books", key = "#searchTitle + '-' + #searchAuthor + '-' + #searchId + '-' + #searchGenre + '-' + #searchPublisher + '-' + #page + '-' + #pageSize")
     public Paginate<BookModel> getBook(String searchTitle, String searchAuthor, String searchId, String searchGenre, String searchPublisher, int page, int pageSize) {
         log.info("Start getBook() with enhanced search");
         return bookBusiness.getBook(searchId, searchTitle, searchAuthor, searchGenre, searchPublisher, page, pageSize);
@@ -161,6 +164,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "bookDetails", key = "#id")
     public Optional<BookDetailDto> getBookById(String id) {
         return bookRepository.findById(id)
                 .map(this::convertToBookDetailDto);
@@ -168,6 +172,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "bookDetailsByIsbn", key = "#isbn")
     public Optional<BookDetailDto> getBookByIsbn(String isbn) {
         return bookRepository.findByIsbn(isbn)
                 .map(this::convertToBookDetailDto);
@@ -175,6 +180,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksByAuthor", key = "#authorId")
     public List<BookDetailDto> getBooksByAuthor(Long authorId) {
         return bookRepository.findByAuthorId(authorId)
                 .stream()
@@ -184,6 +190,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksByGenre", key = "#genreId")
     public List<BookDetailDto> getBooksByGenre(String genreId) {
         return bookRepository.findByGenreId(genreId)
                 .stream()
@@ -193,6 +200,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksByPublisher", key = "#publisherId")
     public List<BookDetailDto> getBooksByPublisher(Long publisherId) {
         return bookRepository.findByPublisherId(publisherId)
                 .stream()
@@ -202,6 +210,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksWithLowStock")
     public List<BookDetailDto> getBooksWithLowStock() {
         return bookRepository.findBooksWithLowStock()
                 .stream()
@@ -211,6 +220,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "outOfStockBooks")
     public List<BookDetailDto> getOutOfStockBooks() {
         return bookRepository.findOutOfStockBooks()
                 .stream()
@@ -220,6 +230,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksWithDiscount")
     public List<BookDetailDto> getBooksWithDiscount() {
         return bookRepository.findBooksWithDiscount()
                 .stream()
@@ -229,6 +240,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksByPublicationYear", key = "#year")
     public List<BookDetailDto> getBooksByPublicationYear(int year) {
         return bookRepository.findByPublicationYear(year)
                 .stream()
@@ -238,6 +250,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksByLanguage", key = "#language")
     public List<BookDetailDto> getBooksByLanguage(String language) {
         return bookRepository.findByLanguage(language)
                 .stream()
@@ -247,6 +260,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksByFormat", key = "#format")
     public List<BookDetailDto> getBooksByFormat(String format) {
         return bookRepository.findByFormat(format)
                 .stream()
@@ -256,6 +270,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "booksByPriceRange", key = "#minPrice + '-' + #maxPrice")
     public List<BookDetailDto> getBooksByPriceRange(java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
         return bookRepository.findByPriceBetween(minPrice, maxPrice)
                 .stream()

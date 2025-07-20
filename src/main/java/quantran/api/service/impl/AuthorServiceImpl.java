@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,6 +26,7 @@ public class AuthorServiceImpl implements AuthorService {
     private AuthorRepository authorRepository;
 
     @Override
+    @Cacheable(value = "authors", key = "#searchName + '-' + #searchCountry + '-' + #isAlive + '-' + #page + '-' + #pageSize")
     public Paginate<Author> getAuthors(String searchName, String searchCountry, Boolean isAlive, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
         Page<Author> authorPage = authorRepository.findAuthorsWithSearch(searchName, searchCountry, isAlive, pageable);
@@ -34,11 +36,13 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Cacheable(value = "authorDetails", key = "#id")
     public Optional<Author> getAuthorById(Long id) {
         return authorRepository.findById(id);
     }
 
     @Override
+    @Cacheable(value = "authorDetailsByName", key = "#name")
     public Optional<Author> getAuthorByName(String name) {
         return authorRepository.findByNameIgnoreCase(name);
     }
@@ -80,32 +84,38 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Cacheable(value = "authorsByCountry", key = "#country")
     public List<Author> getAuthorsByCountry(String country) {
         return authorRepository.findByCountryIgnoreCase(country);
     }
 
     @Override
+    @Cacheable(value = "livingAuthors")
     public List<Author> getLivingAuthors() {
         return authorRepository.findLivingAuthors();
     }
 
     @Override
+    @Cacheable(value = "authorsByBirthYearRange", key = "#startYear + '-' + #endYear")
     public List<Author> getAuthorsByBirthYearRange(int startYear, int endYear) {
         return authorRepository.findByBirthYearRange(startYear, endYear);
     }
 
     @Override
+    @Cacheable(value = "topAuthorsByBookCount", key = "#limit")
     public List<Author> getTopAuthorsByBookCount(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         return authorRepository.findTopAuthorsByBookCount(pageable);
     }
 
     @Override
+    @Cacheable(value = "authorsByBookGenre", key = "#genreName")
     public List<Author> getAuthorsByBookGenre(String genreName) {
         return authorRepository.findByBookGenre(genreName);
     }
 
     @Override
+    @Cacheable(value = "authorsByBookPublisher", key = "#publisherName")
     public List<Author> getAuthorsByBookPublisher(String publisherName) {
         return authorRepository.findByBookPublisher(publisherName);
     }

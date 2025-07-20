@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,7 @@ public class PublisherServiceImpl implements PublisherService {
     private PublisherRepository publisherRepository;
 
     @Override
+    @Cacheable(value = "publishers", key = "#searchName + '-' + #searchCountry + '-' + #searchCity + '-' + #isActive + '-' + #page + '-' + #pageSize")
     public Paginate<Publisher> getPublishers(String searchName, String searchCountry, String searchCity, Boolean isActive, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
         Page<Publisher> publisherPage = publisherRepository.findPublishersWithSearch(searchName, searchCountry, searchCity, isActive, pageable);
@@ -33,11 +35,13 @@ public class PublisherServiceImpl implements PublisherService {
     }
 
     @Override
+    @Cacheable(value = "publisherDetails", key = "#id")
     public Optional<Publisher> getPublisherById(Long id) {
         return publisherRepository.findById(id);
     }
 
     @Override
+    @Cacheable(value = "publisherDetailsByName", key = "#name")
     public Optional<Publisher> getPublisherByName(String name) {
         return publisherRepository.findByNameIgnoreCase(name);
     }
@@ -81,42 +85,50 @@ public class PublisherServiceImpl implements PublisherService {
     }
 
     @Override
+    @Cacheable(value = "publishersByCountry", key = "#country")
     public List<Publisher> getPublishersByCountry(String country) {
         return publisherRepository.findByCountryIgnoreCase(country);
     }
 
     @Override
+    @Cacheable(value = "publishersByCity", key = "#city")
     public List<Publisher> getPublishersByCity(String city) {
         return publisherRepository.findByCityIgnoreCase(city);
     }
 
     @Override
+    @Cacheable(value = "publishersByFoundedYear", key = "#foundedYear")
     public List<Publisher> getPublishersByFoundedYear(Integer foundedYear) {
         return publisherRepository.findByFoundedYear(foundedYear);
     }
 
     @Override
+    @Cacheable(value = "publishersFoundedBefore", key = "#year")
     public List<Publisher> getPublishersFoundedBefore(Integer year) {
         return publisherRepository.findByFoundedYearBefore(year);
     }
 
     @Override
+    @Cacheable(value = "publishersFoundedAfter", key = "#year")
     public List<Publisher> getPublishersFoundedAfter(Integer year) {
         return publisherRepository.findByFoundedYearAfter(year);
     }
 
     @Override
+    @Cacheable(value = "topPublishersByBookCount", key = "#limit")
     public List<Publisher> getTopPublishersByBookCount(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         return publisherRepository.findTopPublishersByBookCount(pageable);
     }
 
     @Override
+    @Cacheable(value = "publishersByBookGenre", key = "#genreName")
     public List<Publisher> getPublishersByBookGenre(String genreName) {
         return publisherRepository.findByBookGenre(genreName);
     }
 
     @Override
+    @Cacheable(value = "publishersByBookAuthor", key = "#authorName")
     public List<Publisher> getPublishersByBookAuthor(String authorName) {
         return publisherRepository.findByBookAuthor(authorName);
     }
