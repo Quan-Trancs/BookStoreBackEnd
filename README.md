@@ -11,6 +11,7 @@ A production-ready Spring Boot REST API for managing a comprehensive bookstore s
 - **Genre Categorization**: Hierarchical book type/genre system
 - **Inventory Management**: Stock tracking, reservations, and low stock alerts
 - **User Authentication**: Secure login with password hashing and role-based access
+- **Pricing**: USD-based pricing with frontend currency conversion support
 
 ### Advanced Features
 - **Async Processing**: Background task processing with status tracking
@@ -38,6 +39,7 @@ A production-ready Spring Boot REST API for managing a comprehensive bookstore s
 - **Spring Boot Actuator**
 - **Caffeine Cache**
 - **JWT (for future token-based auth)**
+- **Frontend Currency Conversion** (ExchangeRate-API, Fixer.io)
 
 ## 📋 Prerequisites
 
@@ -257,9 +259,9 @@ curl -X POST "http://localhost:8082/api/v1/books" \
   -H "Content-Type: application/json" \
   -d '{
     "id": "BOOK001",
-    "name": "Sample Book",
+    "title": "Sample Book",
     "author": "John Doe",
-    "price": "50000VND",
+    "price": "25.50 USD",
     "bookType": "Fiction"
   }'
 ```
@@ -278,7 +280,7 @@ curl "http://localhost:8082/api/health"
 ## 📊 Database Schema
 
 ### Core Tables
-- `book` - Book information with inventory
+- `book` - Book information with inventory (prices in USD)
 - `authors` - Author profiles
 - `publishers` - Publisher information
 - `book_type` - Genre categorization
@@ -329,6 +331,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [API Documentation](docs/API.md)
 - [Deployment Guide](DEPLOYMENT.md)
 - [Database Schema](docs/DATABASE.md)
+- [Frontend Currency Guide](FRONTEND_CURRENCY_GUIDE.md)
 
 ### Issues
 For bugs and feature requests, please create an issue in the repository.

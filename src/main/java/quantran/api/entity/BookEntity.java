@@ -160,8 +160,7 @@ public class BookEntity {
             String numericPart = priceString.replaceAll("(?i)(vnd|usd|eur)$", "").trim();
             BigDecimal price = new BigDecimal(numericPart);
             
-            // Always store in USD (frontend will handle currency conversion)
-            // For now, we'll store the raw value and let frontend convert
+            // Always store in USD - frontend will handle currency conversion
             return price;
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid price format: " + priceString);

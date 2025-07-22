@@ -118,7 +118,7 @@ public class TaskServiceImpl implements TaskService {
     // Simulate dynamic pricing calculation
     private BigDecimal calculateDynamicPricing(BookModel bookModel) {
         try {
-            String priceStr = bookModel.getPrice().replaceAll("(?i)vnd$", "").trim();
+            String priceStr = bookModel.getPrice().replaceAll("(?i)(vnd|usd|eur)$", "").trim();
             BigDecimal basePrice = new BigDecimal(priceStr);
             
             // Apply dynamic pricing factors (demand, seasonality, etc.)
@@ -126,10 +126,10 @@ public class TaskServiceImpl implements TaskService {
             double seasonalityFactor = 1.0 + (Math.sin(System.currentTimeMillis() / 1000000.0) * 0.1);
             
             return basePrice.multiply(BigDecimal.valueOf(demandFactor * seasonalityFactor))
-                           .setScale(0, BigDecimal.ROUND_HALF_UP);
+                           .setScale(2, BigDecimal.ROUND_HALF_UP);
         } catch (Exception e) {
             log.warn("Error calculating dynamic pricing, using original price", e);
-            return new BigDecimal(bookModel.getPrice().replaceAll("(?i)vnd$", "").trim());
+            return new BigDecimal(bookModel.getPrice().replaceAll("(?i)(vnd|usd|eur)$", "").trim());
         }
     }
     

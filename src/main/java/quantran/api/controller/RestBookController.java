@@ -42,31 +42,31 @@ public class RestBookController {
     private final AsyncProcessingBackgroundWorkerImpl asyncProcessingBackgroundWorkerImpl;
     
     /**
-     * GET /api/v1/books - Get all books with pagination and search
+     * GET /api/v1/books - Find books with search criteria and pagination
      */
     @GetMapping
-    public ResponseEntity<Paginate<BookModel>> getBooks(
-            @RequestParam(defaultValue = "") String searchName,
-            @RequestParam(defaultValue = "") String searchAuthor,
-            @RequestParam(defaultValue = "") String searchId,
-            @RequestParam(required = false) String searchGenre,
-            @RequestParam(required = false) String searchPublisher,
+    public ResponseEntity<Paginate<BookModel>> findBooks(
+            @RequestParam(defaultValue = "") String title,
+            @RequestParam(defaultValue = "") String author,
+            @RequestParam(defaultValue = "") String isbn,
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String publisher,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         
-        log.info("Getting books - search: name={}, author={}, id={}, genre={}, publisher={}, page={}, size={}", 
-                searchName, searchAuthor, searchId, searchGenre, searchPublisher, page, size);
+        log.info("Finding books - search: title={}, author={}, isbn={}, genre={}, publisher={}, page={}, size={}", 
+                title, author, isbn, genre, publisher, page, size);
         
-        Paginate<BookModel> result = bookService.getBook(searchName, searchAuthor, searchId, searchGenre, searchPublisher, page, size);
+        Paginate<BookModel> result = bookService.getBook(title, author, isbn, genre, publisher, page, size);
         return ResponseEntity.ok(result);
     }
     
     /**
-     * GET /api/v1/books/{id} - Get a specific book by ID
+     * GET /api/v1/books/{id} - Find a book by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<BookDetailDto> getBook(@PathVariable String id) {
-        log.info("Getting book by ID: {}", id);
+    public ResponseEntity<BookDetailDto> findBookById(@PathVariable String id) {
+        log.info("Finding book by ID: {}", id);
         
         return bookService.getBookById(id)
                 .map(book -> ResponseEntity.ok(book))
@@ -174,11 +174,11 @@ public class RestBookController {
     }
     
     /**
-     * GET /api/v1/books/types - Get all book types
+     * GET /api/v1/books/types - Find all book types
      */
     @GetMapping("/types")
-    public ResponseEntity<List<BookTypeEntity>> getBookTypes() {
-        log.info("Getting book types");
+    public ResponseEntity<List<BookTypeEntity>> findBookTypes() {
+        log.info("Finding book types");
         
         List<BookTypeEntity> bookTypes = bookService.getBookType();
         return ResponseEntity.ok(bookTypes);
@@ -206,11 +206,11 @@ public class RestBookController {
     }
     
     /**
-     * GET /api/v1/books/tasks/{taskId} - Get task status
+     * GET /api/v1/books/tasks/{taskId} - Find task status
      */
     @GetMapping("/tasks/{taskId}")
-    public ResponseEntity<AsyncTaskResponseDto> getTaskStatus(@PathVariable String taskId) {
-        log.info("Getting task status: {}", taskId);
+    public ResponseEntity<AsyncTaskResponseDto> findTaskStatus(@PathVariable String taskId) {
+        log.info("Finding task status: {}", taskId);
         
         return asyncTaskService.getTaskStatus(taskId)
                 .map(task -> ResponseEntity.ok(AsyncTaskResponseDto.fromAsyncTaskRequest(task)))
