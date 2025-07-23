@@ -1,6 +1,5 @@
 package quantran.api.business;
 
-import quantran.api.entity.BookEntity;
 import quantran.api.model.BookModel;
 import quantran.api.page.Paginate;
 import quantran.api.entity.BookTypeEntity;

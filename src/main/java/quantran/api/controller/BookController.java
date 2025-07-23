@@ -2,7 +2,6 @@ package quantran.api.controller;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -13,6 +12,16 @@ import quantran.api.dto.BookResponseDto;
 import quantran.api.entity.BookTypeEntity;
 import quantran.api.page.Paginate;
 import quantran.api.service.BookService;
+import quantran.api.dto.AsyncTaskRequest;
+import quantran.api.dto.AsyncTaskResponseDto;
+import quantran.api.service.AsyncTaskService;
+import quantran.api.asyncProcessingWorkAcceptor.AsyncProcessingWorkAcceptor;
+import quantran.api.asyncProcessingBackgroundWorker.impl.AsyncProcessingBackgroundWorkerImpl;
+import quantran.api.asyncProcessingBackgroundWorker.task.Task;
+import quantran.api.service.IdempotencyService;
+import quantran.api.controller.AsyncIdempotencyUtil;
+import javax.validation.constraints.NotBlank;
+import java.util.Optional;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
@@ -20,7 +29,8 @@ import javax.validation.constraints.Pattern;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
+import quantran.api.model.BookModel;
+import quantran.api.model.UserModel;
 
 /**
  * Standardized BookController with RESTful endpoints and consistent naming conventions.
@@ -34,6 +44,12 @@ public class BookController {
 
     @Autowired
     private BookService bookService;
+
+    // Inject async dependencies
+    @Autowired private AsyncTaskService asyncTaskService;
+    @Autowired private AsyncProcessingWorkAcceptor asyncProcessingWorkAcceptor;
+    @Autowired private AsyncProcessingBackgroundWorkerImpl asyncProcessingBackgroundWorkerImpl;
+    @Autowired private IdempotencyService idempotencyService;
 
     // Standardized CRUD Operations
 
@@ -396,22 +412,11 @@ public class BookController {
      * @return Success response
      */
     @PostMapping("/upload")
-    public ResponseEntity<String> processBookUpload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> processBookUpload(@RequestParam("file") MultipartFile file) throws IOException {
         log.info("Processing book upload: {}", file.getOriginalFilename());
-        
-        try {
-            bookService.processBookUpload(file);
-            log.info("Successfully processed book upload: {}", file.getOriginalFilename());
-            return ResponseEntity.ok("Book upload processed successfully");
-        } catch (IOException e) {
-            log.error("Error processing book upload: {}", file.getOriginalFilename(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error processing book upload: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error processing book upload: {}", file.getOriginalFilename(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error processing book upload");
-        }
+        bookService.processBookUpload(file);
+        log.info("Successfully processed book upload: {}", file.getOriginalFilename());
+        return ResponseEntity.ok("Book upload processed successfully");
     }
 
     /**
@@ -420,20 +425,11 @@ public class BookController {
      * @return Response entity with book data
      */
     @GetMapping("/download")
-    public ResponseEntity<byte[]> downloadBooks() {
+    public ResponseEntity<byte[]> downloadBooks() throws IOException {
         log.info("Downloading books data");
-        
-        try {
-            ResponseEntity<byte[]> response = bookService.downloadBooks();
-            log.info("Successfully downloaded books data");
-            return response;
-        } catch (IOException e) {
-            log.error("Error downloading books data", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        } catch (Exception e) {
-            log.error("Error downloading books data", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        ResponseEntity<byte[]> response = bookService.downloadBooks();
+        log.info("Successfully downloaded books data");
+        return response;
     }
 
     /**
@@ -452,6 +448,65 @@ public class BookController {
         } catch (Exception e) {
             log.error("Error getting book types", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // PATCH /api/v1/books/{id} - Asynchronous book update
+    @PatchMapping("/{id}")
+    public ResponseEntity<AsyncTaskResponseDto> updateBookAsync(
+            @RequestHeader @NotBlank(message = "User name is required") String userName,
+            @RequestHeader @NotBlank(message = "User key is required") String userKey,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @PathVariable String id,
+            @Valid @RequestBody BookRequestDto bookRequest) {
+        UserModel userModel = new UserModel(userName, userKey);
+        String[] status = asyncProcessingWorkAcceptor.acceptWork(userModel);
+        if ("404".equals(status[0])) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (!id.equals(bookRequest.getId())) {
+            return ResponseEntity.badRequest().build();
+        }
+        Optional<ResponseEntity<AsyncTaskResponseDto>> idempotentResponse =
+            AsyncIdempotencyUtil.handleIdempotency(userName, idempotencyKey, idempotencyService, asyncTaskService);
+        if (idempotentResponse.isPresent()) return idempotentResponse.get();
+        BookModel bookModel = new BookModel(
+            bookRequest.getId(),
+            bookRequest.getTitle(),
+            bookRequest.getAuthor(),
+            bookRequest.getPrice().toString(),
+            bookRequest.getBookType()
+        );
+        AsyncTaskRequest task = asyncTaskService.submitTask("update_book", bookModel, userName);
+        idempotencyService.saveTaskId(userName, idempotencyKey, task.getTaskId());
+        Task backgroundTask = new Task("update", task.getTaskId(), bookModel);
+        asyncProcessingBackgroundWorkerImpl.addToRequestQueue(backgroundTask);
+        AsyncTaskResponseDto response = AsyncTaskResponseDto.fromAsyncTaskRequest(task);
+        return ResponseEntity.accepted().body(response);
+    }
+
+    // GET /api/v1/books/tasks/{taskId} - Get async task status
+    @GetMapping("/tasks/{taskId}")
+    public ResponseEntity<AsyncTaskResponseDto> findTaskStatus(@PathVariable String taskId) {
+        Optional<AsyncTaskRequest> task = asyncTaskService.getTaskStatus(taskId);
+        if (task.isPresent()) {
+            AsyncTaskResponseDto response = AsyncTaskResponseDto.fromAsyncTaskRequest(task.get());
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // DELETE /api/v1/books/tasks/{taskId} - Cancel async task
+    @DeleteMapping("/tasks/{taskId}")
+    public ResponseEntity<String> cancelTask(
+            @PathVariable String taskId,
+            @RequestParam String userId) {
+        boolean cancelled = asyncTaskService.cancelTask(taskId, userId);
+        if (cancelled) {
+            return ResponseEntity.ok("Task cancelled successfully");
+        } else {
+            return ResponseEntity.badRequest().body("Task could not be cancelled");
         }
     }
 } 

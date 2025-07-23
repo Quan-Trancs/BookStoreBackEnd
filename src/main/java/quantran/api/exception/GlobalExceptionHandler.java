@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.io.IOException;
 
 @RestControllerAdvice
 @Log4j2
@@ -208,6 +209,19 @@ public class GlobalExceptionHandler {
                 .path(request.getDescription(false))
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ErrorResponse> handleIOException(IOException ex, WebRequest request) {
+        log.error("I/O error occurred: {}", ex.getMessage(), ex);
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("I/O Error")
+                .message("A file processing error occurred: " + ex.getMessage())
+                .path(request.getDescription(false))
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
     
     // Error response DTO

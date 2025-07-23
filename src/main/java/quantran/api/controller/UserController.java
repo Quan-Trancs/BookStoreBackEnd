@@ -12,7 +12,7 @@ import quantran.api.service.UserService;
 @RestController
 @Log4j2
 @RequiredArgsConstructor
-@RequestMapping(UrlConstant.USER)
+@RequestMapping(UrlConstant.USERS)
 @Validated
 public class UserController {
     private final UserService userService;

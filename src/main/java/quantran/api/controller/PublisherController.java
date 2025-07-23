@@ -43,14 +43,9 @@ public class PublisherController {
     public ResponseEntity<PublisherResponseDto> createPublisher(@Valid @RequestBody PublisherRequestDto request) {
         log.info("Creating publisher with name: {}", request.getName());
         
-        try {
-            PublisherResponseDto createdPublisher = publisherService.createPublisher(request);
-            log.info("Successfully created publisher with ID: {}", createdPublisher.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdPublisher);
-        } catch (Exception e) {
-            log.error("Error creating publisher with name: {}", request.getName(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        PublisherResponseDto createdPublisher = publisherService.createPublisher(request);
+        log.info("Successfully created publisher with ID: {}", createdPublisher.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdPublisher);
     }
 
     /**
@@ -64,18 +59,13 @@ public class PublisherController {
             @PathVariable @Min(value = 1, message = "Publisher ID must be positive") Long id) {
         log.info("Finding publisher by ID: {}", id);
         
-        try {
-            Optional<PublisherResponseDto> publisher = publisherService.findPublisherById(id);
-            if (publisher.isPresent()) {
-                log.info("Found publisher with ID: {}", id);
-                return ResponseEntity.ok(publisher.get());
-            } else {
-                log.warn("Publisher not found with ID: {}", id);
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            log.error("Error finding publisher with ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        Optional<PublisherResponseDto> publisher = publisherService.findPublisherById(id);
+        if (publisher.isPresent()) {
+            log.info("Found publisher with ID: {}", id);
+            return ResponseEntity.ok(publisher.get());
+        } else {
+            log.warn("Publisher not found with ID: {}", id);
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -102,14 +92,9 @@ public class PublisherController {
         log.info("Finding publishers with filters - name: {}, country: {}, city: {}, isActive: {}, page: {}, size: {}", 
                 name, country, city, isActive, page, size);
         
-        try {
-            Paginate<PublisherResponseDto> publishers = publisherService.findPublishers(name, country, city, isActive, page, size);
-            log.info("Found {} publishers", publishers.getTotal());
-            return ResponseEntity.ok(publishers);
-        } catch (Exception e) {
-            log.error("Error finding publishers", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        Paginate<PublisherResponseDto> publishers = publisherService.findPublishers(name, country, city, isActive, page, size);
+        log.info("Found {} publishers", publishers.getTotal());
+        return ResponseEntity.ok(publishers);
     }
 
     /**
@@ -126,14 +111,9 @@ public class PublisherController {
         
         log.info("Updating publisher with ID: {}", id);
         
-        try {
-            PublisherResponseDto updatedPublisher = publisherService.updatePublisher(id, request);
-            log.info("Successfully updated publisher with ID: {}", id);
-            return ResponseEntity.ok(updatedPublisher);
-        } catch (Exception e) {
-            log.error("Error updating publisher with ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        PublisherResponseDto updatedPublisher = publisherService.updatePublisher(id, request);
+        log.info("Successfully updated publisher with ID: {}", id);
+        return ResponseEntity.ok(updatedPublisher);
     }
 
     /**
@@ -148,14 +128,9 @@ public class PublisherController {
         
         log.info("Deleting publisher with ID: {}", id);
         
-        try {
-            publisherService.deletePublisher(id);
-            log.info("Successfully deleted publisher with ID: {}", id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting publisher with ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        publisherService.deletePublisher(id);
+        log.info("Successfully deleted publisher with ID: {}", id);
+        return ResponseEntity.noContent().build();
     }
 
     // Specialized Query Endpoints
@@ -172,18 +147,13 @@ public class PublisherController {
         
         log.info("Finding publisher by name: {}", name);
         
-        try {
-            Optional<PublisherResponseDto> publisher = publisherService.findPublisherByName(name);
-            if (publisher.isPresent()) {
-                log.info("Found publisher with name: {}", name);
-                return ResponseEntity.ok(publisher.get());
-            } else {
-                log.warn("Publisher not found with name: {}", name);
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            log.error("Error finding publisher with name: {}", name, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        Optional<PublisherResponseDto> publisher = publisherService.findPublisherByName(name);
+        if (publisher.isPresent()) {
+            log.info("Found publisher with name: {}", name);
+            return ResponseEntity.ok(publisher.get());
+        } else {
+            log.warn("Publisher not found with name: {}", name);
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -199,14 +169,9 @@ public class PublisherController {
         
         log.info("Finding publishers by country: {}", country);
         
-        try {
-            List<PublisherResponseDto> publishers = publisherService.findPublishersByCountry(country);
-            log.info("Found {} publishers for country: {}", publishers.size(), country);
-            return ResponseEntity.ok(publishers);
-        } catch (Exception e) {
-            log.error("Error finding publishers by country: {}", country, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<PublisherResponseDto> publishers = publisherService.findPublishersByCountry(country);
+        log.info("Found {} publishers for country: {}", publishers.size(), country);
+        return ResponseEntity.ok(publishers);
     }
 
     /**
@@ -221,14 +186,9 @@ public class PublisherController {
         
         log.info("Finding publishers by city: {}", city);
         
-        try {
-            List<PublisherResponseDto> publishers = publisherService.findPublishersByCity(city);
-            log.info("Found {} publishers for city: {}", publishers.size(), city);
-            return ResponseEntity.ok(publishers);
-        } catch (Exception e) {
-            log.error("Error finding publishers by city: {}", city, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<PublisherResponseDto> publishers = publisherService.findPublishersByCity(city);
+        log.info("Found {} publishers for city: {}", publishers.size(), city);
+        return ResponseEntity.ok(publishers);
     }
 
     /**
@@ -243,14 +203,9 @@ public class PublisherController {
         
         log.info("Finding publishers by founded year: {}", foundedYear);
         
-        try {
-            List<PublisherResponseDto> publishers = publisherService.findPublishersByFoundedYear(foundedYear);
-            log.info("Found {} publishers for founded year: {}", publishers.size(), foundedYear);
-            return ResponseEntity.ok(publishers);
-        } catch (Exception e) {
-            log.error("Error finding publishers by founded year: {}", foundedYear, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<PublisherResponseDto> publishers = publisherService.findPublishersByFoundedYear(foundedYear);
+        log.info("Found {} publishers for founded year: {}", publishers.size(), foundedYear);
+        return ResponseEntity.ok(publishers);
     }
 
     /**
@@ -265,14 +220,9 @@ public class PublisherController {
         
         log.info("Finding publishers founded before year: {}", year);
         
-        try {
-            List<PublisherResponseDto> publishers = publisherService.findPublishersFoundedBefore(year);
-            log.info("Found {} publishers founded before year: {}", publishers.size(), year);
-            return ResponseEntity.ok(publishers);
-        } catch (Exception e) {
-            log.error("Error finding publishers founded before year: {}", year, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<PublisherResponseDto> publishers = publisherService.findPublishersFoundedBefore(year);
+        log.info("Found {} publishers founded before year: {}", publishers.size(), year);
+        return ResponseEntity.ok(publishers);
     }
 
     /**
@@ -287,14 +237,9 @@ public class PublisherController {
         
         log.info("Finding publishers founded after year: {}", year);
         
-        try {
-            List<PublisherResponseDto> publishers = publisherService.findPublishersFoundedAfter(year);
-            log.info("Found {} publishers founded after year: {}", publishers.size(), year);
-            return ResponseEntity.ok(publishers);
-        } catch (Exception e) {
-            log.error("Error finding publishers founded after year: {}", year, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<PublisherResponseDto> publishers = publisherService.findPublishersFoundedAfter(year);
+        log.info("Found {} publishers founded after year: {}", publishers.size(), year);
+        return ResponseEntity.ok(publishers);
     }
 
     /**
@@ -309,14 +254,9 @@ public class PublisherController {
         
         log.info("Finding publishers by book genre: {}", genreName);
         
-        try {
-            List<PublisherResponseDto> publishers = publisherService.findPublishersByBookGenre(genreName);
-            log.info("Found {} publishers for book genre: {}", publishers.size(), genreName);
-            return ResponseEntity.ok(publishers);
-        } catch (Exception e) {
-            log.error("Error finding publishers by book genre: {}", genreName, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<PublisherResponseDto> publishers = publisherService.findPublishersByBookGenre(genreName);
+        log.info("Found {} publishers for book genre: {}", publishers.size(), genreName);
+        return ResponseEntity.ok(publishers);
     }
 
     /**
@@ -331,14 +271,9 @@ public class PublisherController {
         
         log.info("Finding publishers by book author: {}", authorName);
         
-        try {
-            List<PublisherResponseDto> publishers = publisherService.findPublishersByBookAuthor(authorName);
-            log.info("Found {} publishers for book author: {}", publishers.size(), authorName);
-            return ResponseEntity.ok(publishers);
-        } catch (Exception e) {
-            log.error("Error finding publishers by book author: {}", authorName, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<PublisherResponseDto> publishers = publisherService.findPublishersByBookAuthor(authorName);
+        log.info("Found {} publishers for book author: {}", publishers.size(), authorName);
+        return ResponseEntity.ok(publishers);
     }
 
     /**
@@ -353,13 +288,8 @@ public class PublisherController {
         
         log.info("Finding books by publisher ID: {}", publisherId);
         
-        try {
-            List<BookResponseDto> books = publisherService.findBooksByPublisher(publisherId);
-            log.info("Found {} books for publisher ID: {}", books.size(), publisherId);
-            return ResponseEntity.ok(books);
-        } catch (Exception e) {
-            log.error("Error finding books by publisher ID: {}", publisherId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<BookResponseDto> books = publisherService.findBooksByPublisher(publisherId);
+        log.info("Found {} books for publisher ID: {}", books.size(), publisherId);
+        return ResponseEntity.ok(books);
     }
 } 

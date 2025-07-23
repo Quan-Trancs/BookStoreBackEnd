@@ -7,7 +7,6 @@ import lombok.Builder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -28,8 +27,6 @@ public class AuthorResponseDto {
     
     // Computed fields
     private Integer bookCount;
-    private Boolean isAlive;
-    private Integer age;
     
     // Helper methods
     public Boolean getIsAlive() {

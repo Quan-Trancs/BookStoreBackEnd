@@ -43,14 +43,9 @@ public class AuthorController {
     public ResponseEntity<AuthorResponseDto> createAuthor(@Valid @RequestBody AuthorRequestDto request) {
         log.info("Creating author with name: {}", request.getName());
         
-        try {
-            AuthorResponseDto createdAuthor = authorService.createAuthor(request);
-            log.info("Successfully created author with ID: {}", createdAuthor.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdAuthor);
-        } catch (Exception e) {
-            log.error("Error creating author with name: {}", request.getName(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        AuthorResponseDto createdAuthor = authorService.createAuthor(request);
+        log.info("Successfully created author with ID: {}", createdAuthor.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdAuthor);
     }
 
     /**
@@ -64,18 +59,13 @@ public class AuthorController {
             @PathVariable @Min(value = 1, message = "Author ID must be positive") Long id) {
         log.info("Finding author by ID: {}", id);
         
-        try {
-            Optional<AuthorResponseDto> author = authorService.findAuthorById(id);
-            if (author.isPresent()) {
-                log.info("Found author with ID: {}", id);
-                return ResponseEntity.ok(author.get());
-            } else {
-                log.warn("Author not found with ID: {}", id);
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            log.error("Error finding author with ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        Optional<AuthorResponseDto> author = authorService.findAuthorById(id);
+        if (author.isPresent()) {
+            log.info("Found author with ID: {}", id);
+            return ResponseEntity.ok(author.get());
+        } else {
+            log.warn("Author not found with ID: {}", id);
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -100,14 +90,9 @@ public class AuthorController {
         log.info("Finding authors with filters - name: {}, country: {}, isAlive: {}, page: {}, size: {}", 
                 name, country, isAlive, page, size);
         
-        try {
-            Paginate<AuthorResponseDto> authors = authorService.findAuthors(name, country, isAlive, page, size);
-            log.info("Found {} authors", authors.getTotal());
-            return ResponseEntity.ok(authors);
-        } catch (Exception e) {
-            log.error("Error finding authors", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        Paginate<AuthorResponseDto> authors = authorService.findAuthors(name, country, isAlive, page, size);
+        log.info("Found {} authors", authors.getTotal());
+        return ResponseEntity.ok(authors);
     }
 
     /**
@@ -124,14 +109,9 @@ public class AuthorController {
         
         log.info("Updating author with ID: {}", id);
         
-        try {
-            AuthorResponseDto updatedAuthor = authorService.updateAuthor(id, request);
-            log.info("Successfully updated author with ID: {}", id);
-            return ResponseEntity.ok(updatedAuthor);
-        } catch (Exception e) {
-            log.error("Error updating author with ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        AuthorResponseDto updatedAuthor = authorService.updateAuthor(id, request);
+        log.info("Successfully updated author with ID: {}", id);
+        return ResponseEntity.ok(updatedAuthor);
     }
 
     /**
@@ -146,14 +126,9 @@ public class AuthorController {
         
         log.info("Deleting author with ID: {}", id);
         
-        try {
-            authorService.deleteAuthor(id);
-            log.info("Successfully deleted author with ID: {}", id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting author with ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        authorService.deleteAuthor(id);
+        log.info("Successfully deleted author with ID: {}", id);
+        return ResponseEntity.noContent().build();
     }
 
     // Specialized Query Endpoints
@@ -170,18 +145,13 @@ public class AuthorController {
         
         log.info("Finding author by name: {}", name);
         
-        try {
-            Optional<AuthorResponseDto> author = authorService.findAuthorByName(name);
-            if (author.isPresent()) {
-                log.info("Found author with name: {}", name);
-                return ResponseEntity.ok(author.get());
-            } else {
-                log.warn("Author not found with name: {}", name);
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            log.error("Error finding author with name: {}", name, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        Optional<AuthorResponseDto> author = authorService.findAuthorByName(name);
+        if (author.isPresent()) {
+            log.info("Found author with name: {}", name);
+            return ResponseEntity.ok(author.get());
+        } else {
+            log.warn("Author not found with name: {}", name);
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -197,14 +167,9 @@ public class AuthorController {
         
         log.info("Finding authors by country: {}", country);
         
-        try {
-            List<AuthorResponseDto> authors = authorService.findAuthorsByCountry(country);
-            log.info("Found {} authors for country: {}", authors.size(), country);
-            return ResponseEntity.ok(authors);
-        } catch (Exception e) {
-            log.error("Error finding authors by country: {}", country, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AuthorResponseDto> authors = authorService.findAuthorsByCountry(country);
+        log.info("Found {} authors for country: {}", authors.size(), country);
+        return ResponseEntity.ok(authors);
     }
 
     /**
@@ -221,14 +186,9 @@ public class AuthorController {
         
         log.info("Finding authors by birth year range: {} - {}", startYear, endYear);
         
-        try {
-            List<AuthorResponseDto> authors = authorService.findAuthorsByBirthYearRange(startYear, endYear);
-            log.info("Found {} authors in birth year range: {} - {}", authors.size(), startYear, endYear);
-            return ResponseEntity.ok(authors);
-        } catch (Exception e) {
-            log.error("Error finding authors by birth year range: {} - {}", startYear, endYear, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AuthorResponseDto> authors = authorService.findAuthorsByBirthYearRange(startYear, endYear);
+        log.info("Found {} authors in birth year range: {} - {}", authors.size(), startYear, endYear);
+        return ResponseEntity.ok(authors);
     }
 
     /**
@@ -243,14 +203,9 @@ public class AuthorController {
         
         log.info("Finding authors by book genre: {}", genreName);
         
-        try {
-            List<AuthorResponseDto> authors = authorService.findAuthorsByBookGenre(genreName);
-            log.info("Found {} authors for book genre: {}", authors.size(), genreName);
-            return ResponseEntity.ok(authors);
-        } catch (Exception e) {
-            log.error("Error finding authors by book genre: {}", genreName, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AuthorResponseDto> authors = authorService.findAuthorsByBookGenre(genreName);
+        log.info("Found {} authors for book genre: {}", authors.size(), genreName);
+        return ResponseEntity.ok(authors);
     }
 
     /**
@@ -265,14 +220,9 @@ public class AuthorController {
         
         log.info("Finding authors by book publisher: {}", publisherName);
         
-        try {
-            List<AuthorResponseDto> authors = authorService.findAuthorsByBookPublisher(publisherName);
-            log.info("Found {} authors for book publisher: {}", authors.size(), publisherName);
-            return ResponseEntity.ok(authors);
-        } catch (Exception e) {
-            log.error("Error finding authors by book publisher: {}", publisherName, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AuthorResponseDto> authors = authorService.findAuthorsByBookPublisher(publisherName);
+        log.info("Found {} authors for book publisher: {}", authors.size(), publisherName);
+        return ResponseEntity.ok(authors);
     }
 
     /**
@@ -287,13 +237,8 @@ public class AuthorController {
         
         log.info("Finding books by author ID: {}", authorId);
         
-        try {
-            List<BookResponseDto> books = authorService.findBooksByAuthor(authorId);
-            log.info("Found {} books for author ID: {}", books.size(), authorId);
-            return ResponseEntity.ok(books);
-        } catch (Exception e) {
-            log.error("Error finding books by author ID: {}", authorId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<BookResponseDto> books = authorService.findBooksByAuthor(authorId);
+        log.info("Found {} books for author ID: {}", books.size(), authorId);
+        return ResponseEntity.ok(books);
     }
 } 

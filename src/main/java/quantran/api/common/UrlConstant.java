@@ -17,6 +17,7 @@ public class UrlConstant {
     public static final String HEALTH = "health";
     public static final String STATUS = "status";
     public static final String TASK = "task";
+    public static final String LOGIN = "login";
     
     // Legacy constants (deprecated - for backward compatibility)
     /**
@@ -73,11 +74,7 @@ public class UrlConstant {
     @Deprecated
     public static final String USER = "user";
     
-    /**
-     * @deprecated Use {@link #USERS} + "/login" instead. This constant will be removed in a future version.
-     */
-    @Deprecated
-    public static final String LOGIN = "login";
+
     
     /**
      * @deprecated Use {@link #USERS} + "/logout" instead. This constant will be removed in a future version.
