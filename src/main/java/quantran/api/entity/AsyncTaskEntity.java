@@ -12,9 +12,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "async_tasks", indexes = {
-    @Index(name = "idx_task_user", columnList = "userId"),
+    @Index(name = "idx_task_user", columnList = "user_id"),
     @Index(name = "idx_task_status", columnList = "status"),
-    @Index(name = "idx_task_created", columnList = "createdAt")
+    @Index(name = "idx_task_created", columnList = "created_at")
 })
 @Data
 @NoArgsConstructor

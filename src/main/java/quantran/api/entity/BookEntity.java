@@ -18,13 +18,13 @@ import java.util.Set;
 @Table(name = "books", indexes = {
     @Index(name = "idx_book_title", columnList = "title"),
     @Index(name = "idx_book_isbn", columnList = "isbn"),
-    @Index(name = "idx_book_publication_date", columnList = "publicationDate"),
+    @Index(name = "idx_book_publication_date", columnList = "publication_date"),
     @Index(name = "idx_book_publisher", columnList = "publisher_id"),
     @Index(name = "idx_book_price", columnList = "price"), // For price range queries
     @Index(name = "idx_book_language", columnList = "language"), // For language filter
     @Index(name = "idx_book_format", columnList = "format"), // For format filter
     @Index(name = "idx_book_stock_quantity", columnList = "stock_quantity"), // For stock queries
-    @Index(name = "idx_book_discount_percentage", columnList = "discountPercentage") // For discount queries
+    @Index(name = "idx_book_discount_percentage", columnList = "discount_percentage") // For discount queries
 })
 public class BookEntity {
     @Id

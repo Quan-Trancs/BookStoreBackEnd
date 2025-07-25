@@ -10,11 +10,12 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "bookType", indexes = {
     @Index(name = "idx_booktype_name", columnList = "name"),
-    @Index(name = "idx_booktype_parent", columnList = "parentId")
+    @Index(name = "idx_booktype_parent", columnList = "parent_id")
 })
 @Data
 @NoArgsConstructor
@@ -54,7 +55,8 @@ public class BookTypeEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    @OneToMany(mappedBy = "bookType")
+    @ManyToMany(mappedBy = "genres")
+    @JsonBackReference
     private List<BookEntity> bookEntities;
     
     @PrePersist

@@ -27,6 +27,8 @@ public class AuthorResponseDto {
     
     // Computed fields
     private Integer bookCount;
+    @SuppressWarnings("unused")
+    private Boolean isAlive;
     
     // Helper methods
     public Boolean getIsAlive() {

@@ -20,11 +20,12 @@ public class BookRequestDto {
     private String id;
     
     @NotBlank(message = "Book title is required")
-    @Size(min = 1, max = 255, message = "Title must be between 1 and 255 characters")
-    @Pattern(regexp = "^[a-zA-Z0-9\\s\\-\\.,'\"()]+$", message = "Title contains invalid characters")
+    @Size(min = 1, max = 500, message = "Title must be between 1 and 500 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9\\s\\-\\.,'\"()&]+$", message = "Title contains invalid characters")
     private String title;
     
-    @Size(max = 255, message = "Subtitle must not exceed 255 characters")
+    @Size(max = 500, message = "Subtitle must not exceed 500 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9\\s\\-\\.,'\"()&]*$", message = "Subtitle contains invalid characters")
     private String subtitle;
     
     @Pattern(regexp = "^(?:\\d{10}|\\d{13})$", message = "ISBN must be 10 or 13 digits")
@@ -33,7 +34,8 @@ public class BookRequestDto {
     @Pattern(regexp = "^\\d{3}-\\d{10}$", message = "ISBN-13 must be in format XXX-XXXXXXXXXX")
     private String isbn13;
     
-    @Size(max = 2000, message = "Description must not exceed 2000 characters")
+    @Size(max = 5000, message = "Description must not exceed 5000 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9\\s\\-\\.,'\"()&!?;:]*$", message = "Description contains invalid characters")
     private String description;
     
     @Min(value = 1, message = "Page count must be at least 1")
@@ -47,9 +49,10 @@ public class BookRequestDto {
     private LocalDate publicationDate;
     
     @Size(max = 50, message = "Edition must not exceed 50 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9\\s\\-\\.,'\"()]*$", message = "Edition contains invalid characters")
     private String edition;
     
-    @Pattern(regexp = "^(Hardcover|Paperback|E-book|Audiobook)$", message = "Format must be one of: Hardcover, Paperback, E-book, Audiobook")
+    @Pattern(regexp = "^(Hardcover|Paperback|E-book|Audiobook|Digital|PDF)$", message = "Format must be one of: Hardcover, Paperback, E-book, Audiobook, Digital, PDF")
     private String format;
     
     @NotNull(message = "Price is required")
@@ -71,7 +74,7 @@ public class BookRequestDto {
     @Max(value = 100, message = "Discount percentage cannot exceed 100")
     private Integer discountPercentage;
     
-    @NotNull(message = "Author is required")
+    @NotBlank(message = "Author is required")
     @Size(min = 1, max = 255, message = "Author name must be between 1 and 255 characters")
     @Pattern(regexp = "^[a-zA-Z\\s\\-']+$", message = "Author name contains invalid characters")
     private String author;
@@ -83,4 +86,25 @@ public class BookRequestDto {
     
     @Min(value = 1, message = "Publisher ID must be at least 1")
     private Long publisherId;
+    
+    // Custom validation methods
+    public boolean isValidPriceRange() {
+        if (price == null || originalPrice == null) {
+            return true; // Let individual validations handle null checks
+        }
+        return price.compareTo(originalPrice) <= 0;
+    }
+    
+    public boolean isValidDiscount() {
+        if (discountPercentage == null || originalPrice == null || price == null) {
+            return true; // Let individual validations handle null checks
+        }
+        if (discountPercentage == 0) {
+            return price.compareTo(originalPrice) == 0;
+        }
+        BigDecimal expectedDiscountedPrice = originalPrice.multiply(
+            BigDecimal.valueOf(100 - discountPercentage)
+        ).divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+        return price.compareTo(expectedDiscountedPrice) == 0;
+    }
 } 

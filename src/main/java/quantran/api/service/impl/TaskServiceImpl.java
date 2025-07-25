@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import quantran.api.asyncProcessingBackgroundWorker.impl.AsyncProcessingBackgroundWorkerImpl;
 import quantran.api.asyncProcessingBackgroundWorker.task.Task;
 import quantran.api.dto.AsyncTaskRequest;
+import quantran.api.dto.BookRequestDto;
 import quantran.api.model.BookModel;
 import quantran.api.service.BookService;
 import quantran.api.service.TaskService;
@@ -98,15 +99,36 @@ public class TaskServiceImpl implements TaskService {
     public String requestCommand(String request, BookModel bookModel) {
         switch (request) {
             case "update":
-                bookService.updateBook(bookModel);
+                BookRequestDto requestDto = convertBookModelToRequestDto(bookModel);
+                bookService.updateBook(bookModel.getId(), requestDto);
                 return "202";
             case "add":
-                bookService.addBook(bookModel);
+                BookRequestDto createDto = convertBookModelToRequestDto(bookModel);
+                bookService.createBook(createDto);
                 return "202";
             default:
                 log.warn("Unknown request type: {}", request);
                 return "404";
         }
+    }
+    
+    private BookRequestDto convertBookModelToRequestDto(BookModel bookModel) {
+        BookRequestDto dto = new BookRequestDto();
+        dto.setId(bookModel.getId());
+        dto.setTitle(bookModel.getName());
+        dto.setAuthor(bookModel.getAuthor());
+        dto.setBookType(bookModel.getBookType());
+        
+        // Convert price string to BigDecimal
+        try {
+            String priceStr = bookModel.getPrice().replaceAll("(?i)(vnd|usd|eur)$", "").trim();
+            dto.setPrice(new BigDecimal(priceStr));
+        } catch (Exception e) {
+            log.warn("Error converting price, using default value", e);
+            dto.setPrice(BigDecimal.ZERO);
+        }
+        
+        return dto;
     }
     
     // Simulate inventory check
