@@ -9,8 +9,6 @@ import quantran.api.model.UserModel;
 import quantran.api.service.UserService;
 import quantran.api.util.RandomUtil;
 
-import java.util.List;
-
 @Service
 @Log4j2
 @RequiredArgsConstructor

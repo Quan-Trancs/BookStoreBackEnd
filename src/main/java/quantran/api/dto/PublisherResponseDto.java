@@ -27,7 +27,6 @@ public class PublisherResponseDto {
     
     // Computed fields
     private Integer bookCount;
-    private Integer yearsInBusiness;
     
     // Helper methods
     public Integer getYearsInBusiness() {

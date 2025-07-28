@@ -3,7 +3,6 @@ package quantran.api.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
-import quantran.api.asyncProcessingBackgroundWorker.impl.AsyncProcessingBackgroundWorkerImpl;
 import quantran.api.asyncProcessingBackgroundWorker.task.Task;
 import quantran.api.dto.AsyncTaskRequest;
 import quantran.api.dto.BookRequestDto;
@@ -20,7 +19,6 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
     private final BookService bookService;
-    private final AsyncProcessingBackgroundWorkerImpl asyncProcessingBackgroundWorkerImpl;
     private final AsyncTaskService asyncTaskService;
     
     @Override

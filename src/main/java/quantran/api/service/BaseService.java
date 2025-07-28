@@ -1,9 +1,7 @@
 package quantran.api.service;
 
 import quantran.api.page.Paginate;
-import quantran.api.util.ValidationUtil;
 
-import java.util.List;
 import java.util.Optional;
 
 /**

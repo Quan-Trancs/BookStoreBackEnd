@@ -6,7 +6,6 @@ import quantran.api.UserRole.UserRole;
 import quantran.api.model.UserModel;
 
 import javax.persistence.*;
-import java.util.List;
 
 @Entity
 @Table(name = "user2")

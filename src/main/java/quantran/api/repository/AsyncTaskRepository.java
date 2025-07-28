@@ -9,7 +9,6 @@ import quantran.api.entity.AsyncTaskEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface AsyncTaskRepository extends JpaRepository<AsyncTaskEntity, String> {

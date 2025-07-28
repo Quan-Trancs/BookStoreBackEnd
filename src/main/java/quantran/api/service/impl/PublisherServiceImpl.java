@@ -1,6 +1,5 @@
 package quantran.api.service.impl;
 
-import quantran.api.dto.BookDetailDto;
 import quantran.api.dto.BookResponseDto;
 import quantran.api.dto.PublisherRequestDto;
 import quantran.api.dto.PublisherResponseDto;

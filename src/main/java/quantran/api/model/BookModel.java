@@ -5,7 +5,6 @@ import quantran.api.entity.BookEntity;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
-import java.math.BigDecimal;
 
 public class BookModel {
     @NotNull(message = "book's id is required")
